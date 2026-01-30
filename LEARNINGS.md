@@ -36,13 +36,11 @@ Cross-project learnings. Plan agents MUST read before recommending approaches.
 
 *What didn't work and why. Prevents repeated mistakes.*
 
-<!-- Example:
-### [FP-001] Title
-- **Source:** [project, session]
-- **Context:** [When this applies]
-- **Insight:** [What failed and why]
-- **Avoidance:** [How to prevent]
--->
+### [FP-001] wasm-bindgen-rayon TLS Initialization Failure
+- **Source:** allir, 2026-01-30 bootstrap
+- **Context:** WASM threading with nightly + build-std, attempting to use wasm-bindgen-rayon for parallel proving
+- **Insight:** `__wasm_init_tls` not found error when using wasm-bindgen-rayon with atomics target feature. This is a known ecosystem instability with WASM threading—the TLS initialization symbol isn't generated correctly with certain toolchain combinations.
+- **Avoidance:** Use SIMD-only optimizations or WebWorker-based parallelism instead of wasm-bindgen-rayon. The threading approach requires careful toolchain pinning and may still be unreliable.
 
 ---
 
@@ -50,4 +48,4 @@ Cross-project learnings. Plan agents MUST read before recommending approaches.
 
 | ID | Title | Source | Date Added |
 |----|-------|--------|------------|
-<!-- Entries added as learnings propagate -->
+| FP-001 | wasm-bindgen-rayon TLS Initialization Failure | allir | 2026-01-30 |
