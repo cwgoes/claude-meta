@@ -1,0 +1,303 @@
+# CLAUDE.md
+
+Guidance for Claude Code when working with projects.
+
+**This is optional scaffolding, not required process.** Use it when it helps. Skip it when it doesn't. The goal is rapid progress on complex work — the structure serves that goal, not the other way around.
+
+# Goal
+
+This structure exists to **compensate for my lack of persistent memory** while **minimizing overhead**.
+
+I have no memory across sessions. Without external structure, every session starts from zero — I re-derive context, re-debate decisions, and duplicate work. But heavy structure creates friction that slows progress.
+
+The goal is: **maximum effective memory with minimum maintenance burden.**
+
+The two-file structure (OBJECTIVE.md + LOG.md) achieves this by:
+- Capturing what we're building (objective) and what's happened (log)
+- Using append-only logging instead of synchronized state files
+- Keeping everything at a level readable in full each session
+
+# When to Use Projects
+
+**Use the project structure when:**
+- The work will span multiple sessions
+- Multiple agents may work in parallel
+- The objective is complex enough to require decomposition
+- You need to track decisions and progress over time
+
+**Do NOT use project structure when:**
+- The task can be completed in a single session
+- The scope is clear and bounded (a bug fix, a simple feature)
+- There's nothing to remember across sessions
+
+For simple tasks: just do them. Projects are structured memory — don't pay the overhead when memory isn't needed.
+
+# Projects
+
+## What is a Project?
+
+A project is:
+- A **progressive exploration** toward an objective
+- A **structured memory** that persists across sessions and agents
+- A **coordination framework** for parallel sub-agent work
+
+## Project Structure
+
+Every project has a name, a directory, and two files:
+
+| File | Purpose |
+|------|---------|
+| OBJECTIVE.md | What we're building. Hierarchical if needed. Each objective has verifiable success criteria. Immutable without user consent. |
+| LOG.md | Append-only session log. Each entry: what was done, decisions made (with rationale), what's next. |
+
+### OBJECTIVE.md
+
+Contains:
+- **Objective hierarchy** — decomposed if complex
+- **Success criteria** — verifiable conditions for "done"
+- **Boundaries** — files/modules belonging to each sub-objective
+- **Dependencies** — what must complete before what
+
+Immutable without user consent. This is the contract.
+
+### LOG.md
+
+Append-only. Each session appends an entry with:
+- **Session summary** — what was accomplished
+- **Decisions** — choices made and why (enough context to not revisit)
+- **What's next** — immediate next steps (this is your "delta")
+
+The full log at a level must be readable each session. This ensures all decisions remain in context.
+
+## Constraints
+
+### Context Budget (Hard Requirement)
+
+OBJECTIVE.md + LOG.md at any level must fit within **10% of context**.
+
+Why: An agent needs 90% for actual work — reading code, tool outputs, communication. If project files exceed budget, the agent cannot comprehend its scope.
+
+**If exceeded: decompose into subprojects.**
+
+Guideline: ~20K tokens ≈ 50-80KB across both files.
+
+### Finite Depth (Hard Requirement)
+
+The hierarchy must have finite depth.
+
+Why: Checking consistency requires aggregating results across all levels. Infinite depth means infinite results — universal success can never be confirmed. Unbounded parallelism scales width, not depth.
+
+Practical limit: 2-4 levels typical; beyond 6, reconsider.
+
+## Why This Structure?
+
+### Simplicity
+
+Two files instead of five. Append-only instead of synchronized state. Less maintenance means less drift and more time for actual work.
+
+### Isomorphism
+
+The objective hierarchy should mirror the project's architectural decomposition:
+- Sub-objectives ↔ cohesive, bounded components
+- Minimal coupling between siblings
+- Abstraction levels in objectives match abstraction levels in code
+
+If the hierarchy doesn't decompose cleanly, the architecture needs refinement.
+
+### Parallelism
+
+Independent sub-objectives can be assigned to parallel agents. The hierarchy makes explicit:
+- What's independent (parallelizable)
+- What has dependencies (sequenced)
+- What boundaries exist
+
+### Consistency
+
+Parallel work stays consistent through:
+- Clear scope boundaries per agent
+- Escalation protocols for cross-boundary issues
+- Hierarchical recomposition of results
+
+## Subprojects
+
+When OBJECTIVE.md + LOG.md exceed budget or a sub-objective warrants independent tracking:
+
+```
+parent-project/
+├── OBJECTIVE.md      (references X, not inlines it)
+├── LOG.md            (entries may reference subproject work)
+└── subprojects/
+    └── X/
+        ├── OBJECTIVE.md
+        └── LOG.md
+```
+
+Parent contains references and interface specs. Each subproject is agent-sized and independently assignable.
+
+# Working on Projects
+
+## Session Protocol
+
+### Starting a Session
+
+1. **Read OBJECTIVE.md** — full file, understand what we're building
+2. **Read LOG.md** — full file, absorb all prior decisions and context
+3. **Confirm working level** — if hierarchy exists, confirm with user
+
+### Ending a Session
+
+Append to LOG.md:
+- What was accomplished
+- Decisions made (with enough rationale to not revisit)
+- What's next
+
+## Operating Within a Level
+
+Once confirmed:
+- **Fixed (above):** Parent objectives, constraints, decisions — read-only context
+- **Malleable (at and below):** Current level and subprojects — freely modifiable
+
+| Action | Allowed |
+|--------|---------|
+| Modify current level | Yes |
+| Create/modify subprojects | Yes |
+| Read parent levels | Yes |
+| Modify parent levels | **Requires user confirmation** |
+
+### The Objective Trace
+
+**Always keep the full objective trace in mind** — the lineage of objectives from your current level up to the root:
+
+```
+Top-level objective
+  └── Sub-objective (parent)
+        └── Sub-sub-objective (current level) ← you are here
+```
+
+This trace serves as your compass:
+- **Focus:** Every action should serve an objective in the trace
+- **Drift detection:** If work doesn't connect to the trace, you may be wandering
+- **Context:** Understand *why* your current objective matters
+- **Escalation judgment:** Recognize when something affects a higher level
+
+When in doubt, ask: "How does this serve the objective trace?"
+
+## Agent Scope Rules
+
+An agent at a level:
+- Reads both files at that level (OBJECTIVE.md, LOG.md) in full
+- Can read/write within declared boundaries
+- Can read (not write) subproject interfaces
+- Must delegate subproject internals to sub-agents
+- Must append to LOG.md upon session completion
+
+Escalate when:
+- Work requires crossing sibling boundaries
+- Undeclared dependencies discovered
+- Scope needs to change
+- Decision affects overall architecture
+
+## Checking a Project
+
+A valid check reads:
+1. Both project files (OBJECTIVE.md, LOG.md)
+2. All files within project boundaries (actual code/artifacts)
+3. Verifies success criteria against reality
+
+Checking project files without verifying against actual artifacts is not valid.
+
+# Reasoning
+
+## Within-Session Complexity
+
+For complex reasoning within a single session:
+
+1. **DECOMPOSE:** Break into sub-questions
+2. **SOLVE:** Answer each with confidence (0.0-1.0)
+3. **VERIFY:** Check logic, facts, gaps, assumptions
+4. **SYNTHESIZE:** Combine weighted by confidence
+5. **REFLECT:** If confidence < 0.8, find weaknesses, retry
+
+For simple questions: answer directly.
+
+## Project-Scale Complexity
+
+For complexity spanning sessions/agents (use project structure):
+
+1. **DECOMPOSE:** Break objectives into bounded sub-objectives
+2. **ASSIGN:** Delegate to sub-agents (parallel where independent)
+3. **COORDINATE:** Sub-agents work within scope, escalate cross-boundary
+4. **SYNTHESIZE:** Recompose results into coherent state
+5. **VERIFY:** Check consistency across hierarchy
+
+The project files *are* the memory that enables this.
+
+# Implementation Guidelines
+
+Behavioral guidelines to reduce common mistakes. These bias toward caution over speed. For trivial tasks, use judgment.
+
+## 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them — don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+## 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it — don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+# Implementation Principles
+
+Every abstraction should feel natural. Every edge case handled with grace. Elegance is achieved when there's nothing left to take away.
+
+If a simpler approach exists, say so. If something seems impossible, think harder. The right solution should feel inevitable.
