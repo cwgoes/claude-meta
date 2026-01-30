@@ -1,11 +1,21 @@
 ---
 name: deep-reason
 description: Structured reasoning for complex problems requiring careful analysis
+constitution: CLAUDE.md
+alignment:
+  - Cognitive Architecture / Reflection Protocol
+  - Failure Protocol
 ---
 
 # Deep Reasoning Protocol
 
 Use this for problems requiring careful decomposition and analysis beyond simple reflection.
+
+## Constitutional Authority
+
+This skill derives from CLAUDE.md. Key alignments:
+- **Reflection Protocol** — Triple reflection for complex decisions
+- **Failure Protocol** — Structured escalation when confidence insufficient
 
 ## When to Use
 
@@ -48,6 +58,12 @@ Apply triple reflection:
 - **Success patterns** — What's worked in similar situations?
 - **Synthesis** — What's the unified lesson?
 
+### 6. CAPTURE LEARNINGS
+Note any non-obvious insights:
+- Patterns discovered during analysis
+- Assumptions that proved wrong
+- Reasoning approaches that worked well
+
 ## Output Format
 
 ```
@@ -77,6 +93,10 @@ Confidence: [0.0-1.0]
 - Success patterns: [what's worked before]
 - Synthesis: [unified lesson]
 
+## Learning Candidates
+[Non-obvious insights discovered during reasoning]
+- [Candidate]: [brief insight]
+
 ## Recommendation
 [Clear decision/answer]
 ```
@@ -95,4 +115,5 @@ Stop reasoning when:
 If confidence remains < 0.6 after 2 passes:
 1. Report the analysis with uncertainty clearly stated
 2. Identify what information would increase confidence
-3. Escalate to user for decision or additional input
+3. Capture the failure pattern as a learning candidate
+4. Escalate to user for decision or additional input

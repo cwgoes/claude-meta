@@ -1,202 +1,361 @@
 # CLAUDE.md
 
-## User's Goal
+## Preamble
 
-**Rapid, efficient progress on complex projects requiring varied skillsets.**
+This document is the **constitution** for all Claude agents and skills in this workspace.
 
-- Optimize the user's time (compute usage is not a concern)
-- Minimal, elegant solutions solving exactly the stated problem
-- Nothing speculative, nothing unnecessary
-
-## Why This Structure Exists
-
-I have no memory across sessions. Without external structure, every session starts from zero—re-deriving context, re-debating decisions, duplicating work. But heavy structure creates friction that slows progress.
-
-**Goal: Maximum effective memory with minimum maintenance burden.**
-
-This structure compensates for memory loss while minimizing overhead. Use it when it helps. Skip it when it doesn't.
+**Governance scope:**
+- All agents in `.claude/agents/` derive authority from this document
+- All skills in `.claude/skills/` must align with these protocols
+- Project-level instructions extend but cannot contradict this document
+- Amendments require explicit user consent
 
 ---
 
-# Cognitive Architecture
+## Foundational Goal
 
-## Why This Matters
+**Rapid, efficient, verifiable, and traceable progress on complex projects requiring varied skillsets.**
 
-Context is your scarcest resource. The context window fills fast, and performance degrades as it fills. Every file read, every command output, every exploration consumes tokens that could be used for actual work.
-
-The cognitive architecture manages this constraint through mode separation and parallelization.
-
-## Execution Modes
-
-| Mode | Purpose | Why | Subagent |
-|------|---------|-----|----------|
-| **Explore** | Gather context without polluting main conversation | Subagents run in isolated context windows; only summaries return | `.claude/agents/explore.md` |
-| **Plan** | Consider approaches before committing | Catching wrong approaches early saves more context than it costs | `.claude/agents/plan.md` |
-| **Implement** | Surgical changes only | Minimizes diff size and review burden | `.claude/agents/implement.md` or direct |
-| **Verify** | Confirm solution is minimal and correct | Catches overengineering before it compounds | `.claude/agents/verify.md` |
-
-**When to use implement subagents:** For bounded, independent tasks that can run in parallel (e.g., separate features, test suites, modules with clear interfaces). Use direct implementation when tasks are sequential or tightly coupled.
-
-## Parallelization
-
-**IMPORTANT:** When tasks are independent, use parallel subagents liberally. Compute is not a constraint; the user's time is.
-
-- Spawn parallel subagents for exploration, research, implementation, and verification
-- Do not specify parallelism limits (let scheduling optimize)
-- Aggregate and integrate results before proceeding
-- For implementation: ensure clear boundaries between parallel tasks to avoid conflicts
-
-**Why:** Parallel exploration trades tokens for wall-clock time. Subagents preserve main context by isolating exploration—they report findings, not raw file contents. This is critical for complex codebases where sequential exploration would exhaust context.
-
-## Reflection Protocol
-
-**YOU MUST** answer these before marking work complete:
-1. Does this solve exactly the stated problem?
-2. Is there code that could be removed?
-3. Have I introduced complexity not requested?
-
-If any answer raises doubt, revise before delivering.
-
-For complex decisions, use triple reflection:
-- **Error avoidance** — What could go wrong?
-- **Success patterns** — What's worked before?
-- **Synthesis** — Unified lesson for this decision
-
-**Why:** Without reflection, solutions drift toward overengineering. The questions force verification against the actual request, not an imagined better version of it.
-
-## Failure Protocol
-
-When stuck or failing:
-1. **Stop** after 2 failed attempts at the same approach
-2. **Stash or reset** — `git stash` or `git checkout .` to restore clean state before trying alternatives
-3. **Diagnose:** What specifically is failing and why?
-4. **Decide:** Change approach, decompose further, or escalate to user
-5. **If escalating:** Report what was tried, what failed, and what options remain
-
-**NEVER** retry the same approach indefinitely. Structured failure beats infinite loops.
-
-**Why:** [Research shows](https://arxiv.org/abs/2503.13657) multi-agent systems fail 41-86% of the time, primarily from specification problems and coordination failures. Explicit failure handling prevents cascading errors and wasted effort. Git reset prevents polluted state from affecting subsequent attempts.
-
-## Termination Criteria
-
-**Stop working when:**
-- Success criteria are met and verified
-- 2 distinct approaches have failed with no clear alternative
-- Task requires information or access you don't have
-- Scope has grown beyond original request (escalate first)
-
-**Why:** Poor stop conditions are a documented failure mode—agents continue past useful completion, wasting context and user time.
-
-## Parallel Conflict Prevention
-
-Before spawning parallel implement agents:
-1. **Define explicit file boundaries** for each agent
-2. **No agent should modify files another agent reads**
-3. **Use feature branches** when boundaries are unclear or tasks may overlap
-4. **If conflict detected post-hoc:** Discard conflicting work, re-plan sequentially
-
-**Why:** Parallel agents accept peer output uncritically. Conflicts cascade silently, corrupting the entire implementation. Prevention is cheaper than debugging. Branches provide true isolation when file boundaries are insufficient.
+Core principles:
+- **Optimize user time** — Compute is not a constraint; the user's time is
+- **Minimal solutions** — Solve exactly the stated problem, nothing more
+- **Verifiable** — Work is provably correct (tests pass, builds work, criteria met)
+- **Traceable** — Complete audit trail of code AND decisions, ability to rollback
+- **Learnings** — Capture meta-knowledge that persists and propagates
 
 ---
 
-# Projects
+## Verification System
 
-## Why Projects Exist
+### What Gets Verified
 
-Projects are structured memory for work spanning multiple sessions or agents. The two-file structure (OBJECTIVE.md + LOG.md) captures what we're building and what's happened without synchronization overhead.
+Every implementation must verify:
+1. **Build** — Code compiles/runs without errors
+2. **Tests** — Automated tests pass
+3. **Criteria** — Stated success criteria are met
+4. **Scope** — Changes are surgical (no unrelated modifications)
+
+### Verification Tiers
+
+| Tier | Scope | Required Verification |
+|------|-------|----------------------|
+| **Trivial** | Single-file, < 10 lines | `git diff` + inspection note |
+| **Standard** | Multi-file or significant logic | Automated checks + criteria verification |
+| **Critical** | Architecture, security, interfaces | Full record + explicit user review |
+
+### Verification Gates
+
+| Gate | When | Blocker |
+|------|------|---------|
+| Pre-implementation | Before coding | Criteria must be verifiable |
+| Post-implementation | Before review | Automated checks must pass (Standard+) |
+| Pre-commit | Before checkpoint | Scope verification required |
+
+### Verification Record Format
+
+**Standard/Critical Tier:**
+```markdown
+## Verification Record
+Timestamp: [ISO 8601]
+Commit: [hash or "pending"]
+Tier: Standard | Critical
+
+### Automated Checks
+- [ ] Build: [command] -> [pass/fail]
+- [ ] Tests: [command] -> [N/M passed]
+
+### Criteria Verification
+- [ ] [Criterion]: [evidence]
+
+### Scope Verification
+- [ ] Diff within boundaries: [yes/no]
+- [ ] No unrelated changes: [yes/no]
+```
+
+**Trivial Tier:**
+```markdown
+## Verification: Trivial
+- Change: [1-line description]
+- Diff: [files touched]
+- Inspection: [pass/fail]
+```
+
+---
+
+## Traceability System
+
+### Three-Layer Stack
+
+| Layer | Purpose | Granularity |
+|-------|---------|-------------|
+| **Git** | Code state checkpoints | Atomic, recoverable |
+| **LOG.md** | Decision history + session summaries | Session-level |
+| **OBJECTIVE.md** | Contract for what we're building | Stable reference |
+
+### Checkpoint Model
+
+Every verified implementation creates a checkpoint:
+1. **Git commit** — Captures code state
+2. **LOG.md entry** — Documents what, why, and learnings
+3. **Link** — Commit message references LOG session
+
+### Commit Message Format
+
+```
+[type]: [summary]
+
+[Details if needed]
+
+Session: [LOG.md session identifier]
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
+
+### Rollback Protocol
+
+When rollback needed:
+1. **Identify target** — Which checkpoint to restore
+2. **Git reset** — `git reset --hard [commit]` or `git revert`
+3. **LOG.md note** — Document rollback with rationale
+4. **Re-plan** — If significant, trigger plan mode
+
+---
+
+## Memory System
+
+### Projects (OBJECTIVE.md + LOG.md)
 
 **Use projects when:**
 - Work spans multiple sessions
 - Multiple agents work in parallel
 - Objective requires decomposition
 
-**Skip projects when:**
+**Skip when:**
 - Task completes in one session
 - Scope is clear and bounded
 
-For simple tasks: just do them. Don't pay the overhead when memory isn't needed.
+**Constraints:**
+- Context budget: OBJECTIVE.md + LOG.md ≤ 10% of context (~50-80KB)
+- Depth limit: Maximum 3 levels
 
-## Structure
+### Project Decomposition
 
-Every project has two files:
+**When to decompose:**
+- Context budget exceeded or approaching limit
+- Sub-objective is independently verifiable
+- Sub-objective can be delegated to parallel agent
+- Distinct expertise or tooling required
 
-| File | Purpose |
-|------|---------|
-| OBJECTIVE.md | What we're building. Hierarchical if needed. Verifiable success criteria. Immutable without consent. |
-| LOG.md | Append-only. Each entry: what was done, decisions (with rationale), what's next. |
+**Structure:**
+```
+parent/
+├── OBJECTIVE.md      # References subprojects, defines interfaces
+├── LOG.md
+└── subprojects/
+    └── X/
+        ├── OBJECTIVE.md
+        └── LOG.md
+```
 
-**Why two files:** OBJECTIVE.md is the contract (stable). LOG.md is the history (grows). Separating them prevents the objective from drifting as work progresses. Append-only logging avoids synchronization bugs.
+**Decomposition rules:**
+1. Parent OBJECTIVE.md references subprojects by path (never inlines their content)
+2. Parent defines interface specs — what each subproject must provide
+3. Each subproject has independent OBJECTIVE.md + LOG.md
+4. Subprojects share root LEARNINGS.md (single source of truth)
 
-## Constraints
+**Scope rules at each level:**
+- **Read/write** within declared boundaries
+- **Read-only** parent levels (modifications require user consent)
+- **Read-only** sibling interfaces (delegate internals to sibling agents)
+- **Append** to own LOG.md; propagate learnings to root LEARNINGS.md
 
-**Context budget:** OBJECTIVE.md + LOG.md ≤ 10% of context (~50-80KB).
-
-*Why:* An agent needs 90% of context for actual work—reading code, tool outputs, reasoning. If project files exceed budget, the agent cannot comprehend its own scope. When exceeded, decompose into subprojects.
-
-**Depth limit:** Maximum 3 levels.
-
-*Why:* Verifying success requires checking all levels. Deeper hierarchies make verification intractable and hide complexity rather than managing it.
-
-## Session Protocol
-
-**Start:**
-1. Read OBJECTIVE.md — establishes what success looks like
-2. Read LOG.md — context on prior decisions
-3. `git status` — understand working tree state
-4. Confirm working level
-
-**End:**
-1. Append to LOG.md: accomplishments, decisions, what's next
-2. Commit if implementation is verified and complete
-
-**Why this order:** Reading objective first establishes success criteria. Reading log provides decision history. Git status reveals uncommitted work or dirty state from prior sessions. Committing at end creates recoverable checkpoints.
-
-## Objective Trace
-
-Always maintain the lineage from current level to root:
-
+**Objective trace:**
+Every level maintains lineage to root:
 ```
 Root objective
   └── Parent objective
         └── Current ← you are here
 ```
+If work doesn't connect to this trace, you may be drifting.
 
-Every action should serve this trace. If work doesn't connect, you may be drifting.
+**Escalation triggers:**
+- Work requires crossing sibling boundaries
+- Undeclared dependency on sibling discovered
+- Parent interface spec insufficient
+- Sub-objective complete (parent must integrate)
 
-**Why:** The trace is your compass. It answers "why does this matter?" at any point. Without it, local optimization can diverge from the actual goal.
+### Learnings
 
-## Scope Rules
+Learnings are meta-knowledge captured during work that should persist.
 
-- Modify current level and below freely
-- Read parent levels (read-only)
-- Delegate subproject internals to sub-agents
-- Escalate when crossing boundaries or discovering dependencies
+**Types:**
+- **Technical** — Code patterns, library behaviors, performance insights
+- **Process** — Workflow improvements, communication patterns
+- **Pattern** — Reusable solutions to recurring problems
+- **Failure** — What didn't work and why
 
-**Why read-only parents:** Modifying parent scope without consent breaks the contract other agents may be working against. Escalation ensures architectural decisions get appropriate attention.
+**Capture criteria:**
+- Applies beyond this specific task
+- Would prevent repeated mistakes or reinvention
+- Non-obvious (wouldn't be found in docs)
+
+### LOG.md Learning Format
+
+Each session's learnings section:
+```markdown
+### Learnings
+
+#### [Title]
+- **Type:** Technical | Process | Pattern | Failure
+- **Context:** [When this applies]
+- **Insight:** [The actual learning]
+- **Evidence:** [file:line, measurement, observation]
+- **Propagate:** Yes/No
+```
+
+### LEARNINGS.md
+
+Global repository at project root. Plan agents MUST read before recommending approaches.
+
+**Propagation rules:**
+1. Learnings marked `Propagate: Yes` in LOG.md
+2. Main agent reviews at session end
+3. Deduplicate against existing LEARNINGS.md
+4. Add with source reference
+
+### Session Protocol
+
+**Start** (invoke via `/project-start <name>`):
+
+Session start requires explicit project selection. The SessionStart hook provides workspace context (learnings count, git state, available projects) but does NOT auto-select a project.
+
+```
+/project-start <project-name>    # Orient on specific project
+/project-start --list            # List available projects
+```
+
+Once project selected, the protocol executes:
+1. Resolve project path (`projects/<name>/` or `<name>/`)
+2. Read OBJECTIVE.md — success criteria
+3. Read LOG.md — decision history
+4. Read LEARNINGS.md — applicable learnings (workspace-level)
+5. `git status` — working tree state
+6. Build objective trace
+7. Confirm working level
+
+**End** (invoke via `/session-end`):
+
+| Scenario | Action |
+|----------|--------|
+| **Quick reset** | Output summary, warn if dirty state, no persistence |
+| **Clean completion** | LOG.md entry, propagate learnings, commit with session reference |
+| **Mid-work pause** | LOG.md entry with state, stash or note dirty state, no commit |
+| **No project** | Terminal summary only (or create ad-hoc learning if significant) |
+
+Core requirements:
+1. Never lose work silently — warn about uncommitted changes
+2. Capture enough context for seamless resumption
+3. Propagate learnings marked `Propagate: Yes`
+4. Only commit verified, complete work
+
+**LOG.md session entry format:**
+```markdown
+## Session [YYYY-MM-DD HH:MM] — [brief title]
+
+### Accomplished
+- [What was done]
+
+### Decisions
+- [Choice]: [Rationale]
+
+### Learnings
+[If any — use standard learning format]
+
+### State
+- Git: [clean | uncommitted changes]
+- Verification: [status]
+
+### Next
+- [What to do when resuming]
+```
 
 ---
 
-# Implementation
+## Cognitive Architecture
 
-## Principles
+### Execution Modes
+
+| Mode | Purpose | Git Authority | Subagent |
+|------|---------|---------------|----------|
+| **Explore** | Gather context | None | `.claude/agents/explore.md` |
+| **Plan** | Evaluate approaches | None | `.claude/agents/plan.md` |
+| **Implement** | Surgical changes | None (orchestrator commits) | `.claude/agents/implement.md` |
+| **Verify** | Confirm minimal + correct | None | `.claude/agents/verify.md` |
+
+**Orchestrator authority:** Only the main/orchestrator agent commits to git and appends to LOG.md. Subagents report findings; orchestrator integrates.
+
+### Parallelization
+
+**IMPORTANT:** When tasks are independent, use parallel subagents liberally. Compute is not a constraint.
+
+- Spawn parallel subagents for exploration, research, implementation, verification
+- Define explicit file boundaries before parallel implementation
+- Aggregate and integrate results before proceeding
+- If boundaries unclear: use feature branches
+
+### Parallel Conflict Prevention
+
+Before spawning parallel implement agents:
+1. **Define explicit file boundaries** for each agent
+2. **No agent should modify files another agent reads**
+3. **Use feature branches** when boundaries unclear
+4. **If conflict detected:** Discard conflicting work, re-plan sequentially
+
+### Reflection Protocol
+
+**YOU MUST** answer before marking work complete:
+1. Does this solve exactly the stated problem?
+2. Is there code that could be removed?
+3. Have I introduced complexity not requested?
+4. **What did I learn?** (Capture if propagation-worthy)
+
+For complex decisions, use triple reflection:
+- **Error avoidance** — What could go wrong?
+- **Success patterns** — What's worked before?
+- **Synthesis** — Unified lesson for this decision
+
+### Failure Protocol
+
+When stuck or failing:
+1. **Stop** after 2 failed attempts at the same approach
+2. **Stash or reset** — `git stash` or `git checkout .`
+3. **Diagnose** — What specifically failed and why?
+4. **Capture learning** — Document the failure pattern
+5. **Decide** — Change approach, decompose, or escalate
+
+**NEVER** retry the same approach indefinitely.
+
+### Termination Criteria
+
+**Stop working when:**
+- Success criteria met and verified
+- 2 distinct approaches failed with no alternative
+- Task requires information/access you don't have
+- Scope grown beyond request (escalate first)
+
+---
+
+## Implementation Standards
+
+### Principles
 
 1. **No assumptions** — State explicitly. If uncertain, ask.
 2. **Simplicity** — Minimum code solving the problem. 200 lines → 50 lines.
 3. **Surgical** — Touch only what's necessary. Match existing style.
 4. **Verifiable** — Define success criteria. Loop until verified.
 
-**Why these four:** They prevent the most common failure modes—hidden assumptions cause rework, overengineering wastes context, scattered changes obscure intent, unverified work ships bugs.
-
-## Verification
-
-Before marking implementation complete:
-1. Run `git diff` to confirm changes are surgical
-2. Flag if diff touches files unrelated to the request
-3. Apply reflection protocol
-
-**Why:** Diff provides objective measure of change scope. Subjective review misses scope creep; line counts don't lie.
-
-## Anti-Patterns
+### Anti-Patterns
 
 **NEVER:**
 - Add features beyond what was asked
@@ -209,43 +368,36 @@ Before marking implementation complete:
 
 ---
 
-# Git
+## Constitutional Hierarchy
 
-**Principle:** Safety net, not ceremony.
+### Derived Document Requirements
 
-## When to Commit
+All agents and skills must include a constitutional header:
 
-- Implementation is verified and complete
-- User explicitly requests
-- Before attempting risky refactors
-
-## When NOT to Commit
-
-- Broken or unverified code
-- "Progress" without working state
-- Amending previous commits (unless explicitly requested)
-
-## For Recovery
-
-- `git stash` before attempting alternative approaches
-- `git checkout .` to abandon failed attempts cleanly
-- `git diff` to verify changes match intent
-
-**Why:** Git provides recoverable checkpoints that LOG.md cannot—actual code state, not descriptions of it. But commits should mark verified milestones, not create noise.
-
+```yaml
 ---
-
-# Commands
-
-```bash
-# Rust
-cargo check && cargo test
-
-# Solidity
-forge build && forge test
+constitution: CLAUDE.md
+alignment:
+  - [protocol/section this document implements]
+---
 ```
 
-# Gotchas
+### Governance Rules
 
-- Vendor directories may have pinned toolchains (check rust-toolchain.toml)
-- SP1/RISC-V targets require specific nightly versions
+1. **CLAUDE.md changes** require user consent
+2. **Derived docs** must implement required protocols
+3. **Conflicts** — CLAUDE.md takes precedence
+4. **Amendments** cascade to derived documents
+
+### Required Protocols by Document Type
+
+**Agents:**
+- Verification (tier-appropriate)
+- Learning candidates output
+- Failure protocol
+- Git authority constraints
+
+**Skills:**
+- Constitutional alignment
+- Traceability integration
+- Learning capture where applicable

@@ -1,11 +1,25 @@
 ---
 name: project-management
 description: Detailed guidance for multi-session project management with OBJECTIVE.md and LOG.md
+constitution: CLAUDE.md
+alignment:
+  - Memory System / Projects
+  - Traceability System
+  - Memory System / Learnings
+  - Verification System
 ---
 
 # Project Management Guide
 
-This skill provides detailed protocols for managing multi-session projects using the two-file structure.
+This skill provides detailed protocols for managing multi-session projects using the two-file structure, aligned with the constitutional requirements of CLAUDE.md.
+
+## Constitutional Authority
+
+This skill derives from CLAUDE.md. Key alignments:
+- **Memory System** — OBJECTIVE.md + LOG.md structure
+- **Traceability System** — Three-layer stack (Git + LOG.md + OBJECTIVE.md)
+- **Learnings** — Capture and propagation via LEARNINGS.md
+- **Verification** — Tiered verification before checkpoints
 
 ## When to Use Projects
 
@@ -30,6 +44,11 @@ project-name/
 └── LOG.md          # Append-only session log
 ```
 
+Root-level (alongside CLAUDE.md):
+```
+LEARNINGS.md        # Global learnings repository
+```
+
 ### OBJECTIVE.md
 
 The contract. Contains:
@@ -45,9 +64,19 @@ The contract. Contains:
 The history. Each session appends:
 - **Summary** — what was accomplished
 - **Decisions** — choices made and why (enough to not revisit)
+- **Learnings** — non-obvious insights (with propagation flag)
 - **What's next** — immediate next steps
 
 **Append-only.** Never edit previous entries.
+
+### LEARNINGS.md
+
+Global repository at project root. Contains:
+- **Technical Patterns** — code patterns, library behaviors
+- **Process Patterns** — workflow improvements
+- **Failure Patterns** — what didn't work and why
+
+Plan agents MUST read before recommending approaches.
 
 ---
 
@@ -70,8 +99,9 @@ Maximum 3 levels.
 ### Starting a Session
 1. Read OBJECTIVE.md in full
 2. Read LOG.md in full
-3. Run `git status` — understand working tree state
-4. Confirm working level with user if hierarchy exists
+3. Read LEARNINGS.md for applicable learnings
+4. Run `git status` — understand working tree state
+5. Confirm working level with user if hierarchy exists
 
 ### Ending a Session
 1. Append to LOG.md:
@@ -84,11 +114,21 @@ Maximum 3 levels.
 ### Decisions
 - [Choice]: [Rationale]
 
+### Learnings
+
+#### [Title]
+- **Type:** Technical | Process | Pattern | Failure
+- **Context:** [When this applies]
+- **Insight:** [The actual learning]
+- **Evidence:** [file:line, measurement, observation]
+- **Propagate:** Yes/No
+
 ### Next
 - [Immediate next steps]
 ```
 
-2. Commit if implementation is verified and complete
+2. Propagate learnings marked `Propagate: Yes` to LEARNINGS.md
+3. Commit if implementation is verified and complete
 
 ### Git Integration
 
@@ -97,6 +137,16 @@ Maximum 3 levels.
 - User explicitly requests
 - Before attempting risky refactors
 
+**Commit message format:**
+```
+[type]: [summary]
+
+[Details if needed]
+
+Session: [LOG.md session identifier]
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
 **NEVER commit:**
 - Broken or unverified code
 - "Progress" without working state
@@ -104,6 +154,88 @@ Maximum 3 levels.
 **For recovery:**
 - `git stash` before attempting alternative approaches
 - `git checkout .` to abandon failed attempts cleanly
+
+---
+
+## Traceability
+
+### Three-Layer Stack
+
+| Layer | Purpose | Granularity |
+|-------|---------|-------------|
+| Git | Code state checkpoints | Atomic, recoverable |
+| LOG.md | Decision history + learnings | Session-level |
+| OBJECTIVE.md | Contract for what we're building | Stable reference |
+
+### Checkpoint Requirements
+
+Every verified implementation creates a checkpoint:
+1. **Git commit** — With session link in message
+2. **LOG.md entry** — Documents what, why, learnings
+3. **Verification record** — Per tier requirements
+
+### Rollback Protocol
+
+When rollback needed:
+1. Identify target checkpoint (commit hash)
+2. `git reset --hard [commit]` or `git revert`
+3. Add LOG.md entry documenting rollback with rationale
+4. Re-plan if significant
+
+---
+
+## Learnings Integration
+
+### Capture
+
+During implementation, note:
+- Non-obvious behaviors discovered
+- Patterns that worked well
+- Approaches that failed
+- Insights that would apply elsewhere
+
+### LOG.md Format
+
+```markdown
+### Learnings
+
+#### [Title]
+- **Type:** Technical | Process | Pattern | Failure
+- **Context:** [When this applies]
+- **Insight:** [The actual learning]
+- **Evidence:** [file:line, measurement, observation]
+- **Propagate:** Yes/No
+```
+
+### Propagation
+
+At session end:
+1. Review learnings marked `Propagate: Yes`
+2. Check LEARNINGS.md for duplicates
+3. Add new learnings with source reference
+4. Assign ID (LP-###, PP-###, or FP-###)
+
+### LEARNINGS.md Structure
+
+```markdown
+## Technical Patterns
+### [LP-001] Title
+- **Source:** [project, session]
+- **Context:** [When this applies]
+- **Insight:** [The learning]
+- **Applicability:** [Where to use it]
+
+## Process Patterns
+### [PP-001] Title
+...
+
+## Failure Patterns
+### [FP-001] Title
+- **Source:** [project, session]
+- **Context:** [When this applies]
+- **Insight:** [What failed and why]
+- **Avoidance:** [How to prevent]
+```
 
 ---
 
@@ -132,6 +264,7 @@ At any level:
 - **Read only** subproject interfaces (delegate internals to sub-agents)
 - **Read only** parent levels (modifications require user consent)
 - **Append** to LOG.md on session completion
+- **Propagate** learnings to root LEARNINGS.md
 
 ### Escalation Triggers
 
@@ -141,6 +274,7 @@ Escalate to user when:
 - Scope needs to change
 - Decision affects architecture
 - 2 approaches have failed (per Failure Protocol)
+- Learning suggests objective modification
 
 ---
 
@@ -158,6 +292,29 @@ Every action should serve this trace. If work doesn't connect, you may be drifti
 
 ---
 
+## Verification Integration
+
+### Before Checkpoint
+
+Verify per tier:
+- **Trivial:** `git diff` + inspection note
+- **Standard:** Automated checks + criteria verification
+- **Critical:** Full record + user review
+
+### Verification Record in LOG.md
+
+Include verification summary in session entry:
+```markdown
+### Verification
+- Tier: Standard
+- Build: `cargo check` -> pass
+- Tests: `cargo test` -> 15/15 passed
+- Criteria: [list with evidence]
+- Scope: surgical (2 files, 45 lines)
+```
+
+---
+
 ## Integration with Cognitive Architecture
 
 ### Parallel Implementation
@@ -171,13 +328,14 @@ When spawning parallel implement agents for a project:
 If stuck on a project objective:
 1. Stop after 2 failed approaches
 2. `git stash` or `git checkout .` to restore clean state
-3. Log the failure in LOG.md with diagnosis
+3. Capture failure as learning in LOG.md
 4. Escalate to user with options
 
 ### Termination
 A project objective is complete when:
 - All success criteria are verified
 - `git diff` confirms only expected changes
-- LOG.md documents the completion
-- Commit created (if appropriate)
+- LOG.md documents the completion with learnings
+- Commit created with proper message format
+- Learnings propagated to LEARNINGS.md
 - No open sub-objectives remain
