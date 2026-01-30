@@ -16,12 +16,55 @@ This document is the **constitution** for all Claude agents and skills in this w
 
 **Rapid, efficient, verifiable, and traceable progress on complex projects requiring varied skillsets.**
 
-Core principles:
-- **Optimize user time** — Compute is not a constraint; the user's time is
-- **Minimal solutions** — Solve exactly the stated problem, nothing more
-- **Verifiable** — Work is provably correct (tests pass, builds work, criteria met)
-- **Traceable** — Complete audit trail of code AND decisions, ability to rollback
-- **Learnings** — Capture meta-knowledge that persists and propagates
+Core principles (in priority order):
+1. **Optimize user time** — Compute is not a constraint; the user's time is
+2. **Minimal solutions** — Solve exactly the stated problem, nothing more
+3. **Verifiable** — Work is provably correct (tests pass, builds work, criteria met)
+4. **Traceable** — Complete audit trail of code AND decisions, ability to rollback
+5. **Learnings** — Capture meta-knowledge that persists and propagates
+
+**Priority means:** When principles conflict, higher-ranked wins. Traceability overhead that slows the user more than it helps is misaligned.
+
+---
+
+## Work Modes
+
+Work scales from lightweight to structured based on **uncertainty** and **duration**, not complexity.
+
+| Mode | When | Structure | Traceability | Verification |
+|------|------|-----------|--------------|--------------|
+| **Ad-hoc** | Clear task, single session, no resumption needed | None | Git commits only (in working context) | Git commit (no formal record) |
+| **Project** | Multi-session, decisions worth recording, or decomposition needed | Own repo with OBJECTIVE.md + LOG.md | Full checkpoint model + learnings | Per tier |
+
+**Mode selection heuristics:**
+
+Start **Ad-hoc** when:
+- User request is specific and bounded
+- You can see the finish line before starting
+- No decisions require future reference
+
+Upgrade to **Project** when:
+- Scope expands beyond initial estimate
+- You make a decision worth recording
+- Session ends with incomplete work
+- User explicitly requests tracking
+- Decomposition into subprojects needed
+- Multiple agents will work in parallel
+
+**Downgrade never happens.** Once a project exists, maintain it.
+
+**Graduation is automatic with notification:**
+- Agent monitors for upgrade triggers during work
+- When triggered, agent creates project structure and notifies user: "Scope expanded — created project with OBJECTIVE.md + LOG.md"
+- User does not need to approve; notification is informational
+
+**Ad-hoc work can graduate:**
+```
+Ad-hoc (working) → scope expands → create project repo with OBJECTIVE.md + LOG.md → notify user
+```
+This is cheaper than premature structure.
+
+**Workspace repo is metadata-only.** The workspace repository holds constitutional documents (CLAUDE.md, LEARNINGS.md) and Claude configuration (.claude/). All tracked work lives in project repositories.
 
 ---
 
@@ -53,6 +96,16 @@ Every implementation must verify:
 
 ### Verification Record Format
 
+**When needed:** Verification records are for full checkpoints only. Lightweight checkpoints skip formal verification — the git commit itself is the record.
+
+**Trivial Tier:**
+```markdown
+## Verification: Trivial
+- Change: [1-line description]
+- Diff: [files touched]
+- Inspection: [pass/fail]
+```
+
 **Standard/Critical Tier:**
 ```markdown
 ## Verification Record
@@ -72,14 +125,6 @@ Tier: Standard | Critical
 - [ ] No unrelated changes: [yes/no]
 ```
 
-**Trivial Tier:**
-```markdown
-## Verification: Trivial
-- Change: [1-line description]
-- Diff: [files touched]
-- Inspection: [pass/fail]
-```
-
 ---
 
 ## Traceability System
@@ -94,13 +139,35 @@ Tier: Standard | Critical
 
 ### Checkpoint Model
 
-Every verified implementation creates a checkpoint:
-1. **Git commit** — Captures code state
-2. **LOG.md entry** — Documents what, why, and learnings
-3. **Link** — Commit message references LOG session
+Two checkpoint levels for Project mode:
+
+| Level | When | What |
+|-------|------|------|
+| **Lightweight** | Incremental progress, no significant decisions | Git commit only |
+| **Full** | Session end, significant decisions, milestone | Git commit + LOG.md entry |
+
+**Lightweight checkpoint:**
+- Git commit with standard message format
+- No LOG.md entry required
+- Use for: incremental saves, minor fixes, work-in-progress
+
+**Full checkpoint:**
+- Git commit referencing LOG session
+- LOG.md entry documenting what, why, and learnings
+- Use for: session boundaries, decisions worth recording, completed features
+
+**Heuristic:** Default to lightweight. Upgrade to full when you'd regret not having the context later.
 
 ### Commit Message Format
 
+**Lightweight:**
+```
+[type]: [summary]
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+**Full (with LOG.md link):**
 ```
 [type]: [summary]
 
@@ -137,7 +204,78 @@ When rollback needed:
 
 **Constraints:**
 - Context budget: OBJECTIVE.md + LOG.md ≤ 10% of context (~50-80KB)
+  - *Rationale:* Agent needs ~90% for code, exploration, and reasoning. Exceeding this crowds out working memory.
+  - *Flexibility:* For dense technical projects with minimal code context, up to 20% acceptable.
 - Depth limit: Maximum 3 levels
+  - *Rationale:* Verification requires checking all levels. Beyond 3, trace maintenance exceeds benefit.
+
+### Repository Model
+
+**One project = one repository. Workspace = metadata only.**
+
+| Repository | Purpose | Contents |
+|------------|---------|----------|
+| **Workspace** | Constitutional metadata | CLAUDE.md, LEARNINGS.md, .claude/ configuration |
+| **Project** | Tracked work | OBJECTIVE.md, LOG.md, code, artifacts |
+
+**Work mode implications:**
+
+| Mode | Git Structure |
+|------|---------------|
+| **Ad-hoc** | Working context (existing project repo, or no persistence needed) |
+| **Project** | Own repository (required for any tracked work) |
+
+**Graduation path:**
+```
+Ad-hoc (working in some context)
+  → Scope expands
+    → Create project repo with OBJECTIVE.md + LOG.md
+```
+
+**Ad-hoc work locations:**
+- Existing project repositories (quick fixes, small enhancements)
+- Ephemeral contexts (exploratory work that may not persist)
+- Never the workspace repo (reserved for metadata)
+
+Each project repository ensures:
+- Independent version history per project
+- Clean rollback without affecting other work
+- Parallel work on multiple projects without branch conflicts
+- Clear ownership boundaries
+
+**Workspace structure:**
+```
+workspace/                    # Not a git repo itself
+├── CLAUDE.md                 # Constitution (workspace-level)
+├── LEARNINGS.md              # Shared learnings (workspace-level)
+├── .claude/                  # Agents, skills, settings
+└── projects/
+    ├── alpha/                # git repo
+    │   ├── OBJECTIVE.md
+    │   ├── LOG.md
+    │   └── src/
+    └── beta/                 # git repo
+        ├── OBJECTIVE.md
+        ├── LOG.md
+        ├── core/             # submodule (own repo, pinned)
+        └── subprojects/
+            └── beta-utils/   # subdirectory (same repo)
+                ├── OBJECTIVE.md
+                └── LOG.md
+```
+
+**Key distinctions:**
+| Level | Git Status | Scope |
+|-------|------------|-------|
+| Workspace | Not a repo | Constitution, learnings, tooling |
+| Project | Repository root | Independent codebase + history |
+| Subproject (dir) | Subdirectory | Decomposes parent, shares repo |
+| Subproject (submodule) | Submodule | Independent history, pinned in parent |
+
+**Cross-project references:**
+- Reference by path relative to workspace root: `projects/alpha/`
+- Never commit cross-project dependencies implicitly
+- For shared code: submodule or proper dependency management
 
 ### Project Decomposition
 
@@ -147,16 +285,40 @@ When rollback needed:
 - Sub-objective can be delegated to parallel agent
 - Distinct expertise or tooling required
 
-**Structure:**
+**Subproject strategies:**
+
+| Strategy | When to use |
+|----------|-------------|
+| **Subdirectory** | Tightly coupled, same release cycle, no independent use |
+| **Submodule** | Reusable across projects, independent versioning needed, separate maintainers |
+| **Separate project** | Fully independent lifecycle, no parent relationship |
+
+**Structure (subdirectory):**
 ```
-parent/
-├── OBJECTIVE.md      # References subprojects, defines interfaces
+project/                      # git repo root
+├── OBJECTIVE.md              # References subprojects, defines interfaces
 ├── LOG.md
 └── subprojects/
     └── X/
         ├── OBJECTIVE.md
         └── LOG.md
 ```
+
+**Structure (submodule):**
+```
+project/                      # git repo root
+├── OBJECTIVE.md
+├── LOG.md
+└── shared-lib/               # submodule (own repo, pinned commit)
+    ├── OBJECTIVE.md
+    └── LOG.md
+```
+
+**Submodule guidelines:**
+- Pin to specific commits, not branches
+- Document submodule purpose in parent's OBJECTIVE.md
+- Update submodule commits explicitly (treat as dependency change)
+- Submodule has own OBJECTIVE.md + LOG.md if actively developed
 
 **Decomposition rules:**
 1. Parent OBJECTIVE.md references subprojects by path (never inlines their content)
@@ -195,10 +357,18 @@ Learnings are meta-knowledge captured during work that should persist.
 - **Pattern** — Reusable solutions to recurring problems
 - **Failure** — What didn't work and why
 
-**Capture criteria:**
-- Applies beyond this specific task
-- Would prevent repeated mistakes or reinvention
-- Non-obvious (wouldn't be found in docs)
+**Capture criteria (must meet ≥2):**
+- **Reusable**: Would apply to ≥2 other tasks you can name
+- **Non-documented**: Not in official docs, READMEs, or obvious from code
+- **Cost-saving**: Discovering this again would take >5 minutes
+- **Failure-derived**: Learned from something that didn't work
+
+**Skip capture when:**
+- Insight is project-specific with no broader application
+- Already exists in LEARNINGS.md (check first)
+- Obvious to anyone familiar with the technology
+
+**When uncertain:** Capture with `Propagate: No`. Review at session end.
 
 ### LOG.md Learning Format
 

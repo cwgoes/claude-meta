@@ -1,9 +1,12 @@
 #!/bin/bash
 # Constitutional pre-commit verification hook
 # Checks that commit follows constitutional requirements
-
-# This hook outputs JSON to control Claude's behavior
-# Exit 0 with JSON to allow/deny, exit non-zero to proceed normally
+#
+# Per CLAUDE.md Checkpoint Model:
+#   - Lightweight checkpoint: git commit only (no Session: required)
+#   - Full checkpoint: git commit + LOG.md entry (Session: reference expected)
+#
+# This hook is informational only, not blocking.
 
 COMMAND="$1"
 
@@ -11,11 +14,12 @@ COMMAND="$1"
 if echo "$COMMAND" | grep -qE "^git commit"; then
     # Check if commit message includes session reference
     if echo "$COMMAND" | grep -qE "Session:"; then
-        # Has session reference - allow
+        # Full checkpoint format - good
         exit 0
     else
-        # Output reminder as feedback (not blocking)
-        echo "Reminder: Commit messages should include 'Session: [identifier]' per CLAUDE.md traceability requirements"
+        # Lightweight checkpoint format - also valid
+        # Just note the distinction for awareness
+        echo "Note: Lightweight checkpoint (no Session: link). Use full checkpoint format for session boundaries or significant decisions."
         exit 0
     fi
 fi

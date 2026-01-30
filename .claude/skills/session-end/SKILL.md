@@ -3,7 +3,9 @@ name: session-end
 description: End current session with appropriate memory capture for context continuity
 constitution: CLAUDE.md
 alignment:
+  - Work Modes
   - Memory System / Session Protocol
+  - Memory System / Repository Model
   - Traceability System
   - Memory System / Learnings
 ---
@@ -15,6 +17,7 @@ Ends the current session with appropriate memory capture. Designed for any exit 
 ## Constitutional Authority
 
 This skill implements CLAUDE.md Session Protocol (End) with extensions for:
+- Work mode awareness (Ad-hoc vs Project)
 - Variable session types (project vs. ad-hoc)
 - Urgency levels (quick reset vs. full capture)
 - State preservation for seamless resumption
@@ -26,9 +29,9 @@ This skill implements CLAUDE.md Session Protocol (End) with extensions for:
 ```
 
 Modes:
-- **quick** — Minimal capture, fast context reset (default if no project)
+- **quick** — Minimal capture, fast context reset (default for Ad-hoc work)
 - **full** — Complete memory capture with LOG.md, learnings, commit consideration
-- **(no argument)** — Auto-detect based on session state
+- **(no argument)** — Auto-detect based on work mode and session state
 
 ---
 
@@ -39,7 +42,7 @@ Modes:
 For context resets or sessions without significant work to preserve.
 
 **Steps:**
-1. Check for uncommitted changes (`git status`)
+1. Check for uncommitted changes (`git status` in project directory — each project is its own repo)
 2. If dirty state exists, warn user and offer options
 3. Output brief session summary to terminal (not persisted)
 4. Done
@@ -126,15 +129,23 @@ For multi-session projects or significant work worth preserving.
 
 ## Auto-Detection Logic
 
-When invoked without mode argument:
+When invoked without mode argument, determine based on Work Mode:
 
 ```
-Has active project (OBJECTIVE.md exists)?
-├── Yes → Has significant work this session?
-│   ├── Yes → Full mode
-│   └── No → Ask user: "Minimal work detected. Quick or Full?"
-└── No → Quick mode
+Detect current Work Mode:
+├── Ad-hoc (no OBJECTIVE.md) → Quick mode (but check for graduation triggers)
+└── Project (own repo with OBJECTIVE.md) → Full mode
+
+For Project mode, check significant work:
+├── Significant work → Full mode
+└── Minimal work → Ask user: "Minimal work detected. Quick or Full?"
 ```
+
+**Work Mode detection:**
+| Structure | Mode |
+|-----------|------|
+| No OBJECTIVE.md | Ad-hoc |
+| Own git repo with OBJECTIVE.md | Project |
 
 "Significant work" indicators:
 - Files modified (per `git status`)
@@ -154,28 +165,39 @@ Files modified:
 - [list]
 
 Options:
-1. **Commit** — Create checkpoint (requires verification)
-2. **Stash** — Preserve for later (`git stash push -m "session-end [date]"`)
-3. **Discard** — Abandon changes (`git checkout .`)
-4. **Leave** — Keep dirty state, note in LOG.md for next session
+1. **Full checkpoint** — Commit + LOG.md entry (for significant work/decisions)
+2. **Lightweight checkpoint** — Commit only, no LOG.md (for incremental progress)
+3. **Stash** — Preserve for later (`git stash push -m "session-end [date]"`)
+4. **Discard** — Abandon changes (`git checkout .`)
+5. **Leave** — Keep dirty state, note in LOG.md for next session
 
 Which option?
 ```
 
+Per CLAUDE.md Checkpoint Model: use lightweight for incremental saves, full for session boundaries or decisions worth recording.
+
 ---
 
-## No-Project Sessions
+## Ad-hoc Work Mode Sessions
 
-For ad-hoc work without OBJECTIVE.md/LOG.md:
+For ad-hoc work without OBJECTIVE.md/LOG.md (per Work Modes):
 
-**Quick mode** (default):
+**Quick mode** (default for Ad-hoc):
 - Output summary to terminal
 - Warn about uncommitted changes
 - No persistence
 
 **Full mode** (if requested):
 - Offer to create minimal session record in LEARNINGS.md (if learnings exist)
-- Or suggest creating a project if work should continue
+- Or suggest creating a project via `/project-create` if work should continue
+
+**Graduation prompt:**
+If significant work detected in Ad-hoc mode:
+```
+Significant work detected in Ad-hoc mode.
+Recommend: /project-create <name> to preserve context for future sessions.
+Continue with Quick mode? [Y/n]
+```
 
 ---
 

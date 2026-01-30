@@ -3,7 +3,9 @@ name: project-start
 description: Get oriented on an existing project - understand structure, objective, state, delta, and establish working level
 constitution: CLAUDE.md
 alignment:
+  - Work Modes
   - Memory System / Projects
+  - Memory System / Repository Model
   - Memory System / Session Protocol
 ---
 
@@ -18,8 +20,21 @@ Get oriented on an existing project. **Requires project name.**
 /project-start --list
 ```
 
-- `<project-name>` — Name or path of project to start (e.g., `allir`, `pedersen-solidity-benchmark`)
+- `<project-name>` — Name or path of project to start
 - `--list` — List available projects with their status
+
+## Work Mode Detection
+
+Per CLAUDE.md Work Modes, determine current mode based on structure:
+
+| Structure Found | Mode |
+|-----------------|------|
+| No OBJECTIVE.md | Ad-hoc (suggest project creation if continuing prior work) |
+| Own git repository with OBJECTIVE.md | Project |
+
+**Mode indicators in output:** Always show detected mode and any upgrade recommendations.
+
+**Note:** The workspace repo is metadata-only (constitution, configuration). All tracked work requires a project repo.
 
 ## Project Resolution
 
@@ -36,12 +51,13 @@ If project not found, list available projects and ask user to specify.
 2. **Read OBJECTIVE.md** — Understand what we're building and success criteria
 3. **Read LOG.md** — Understand prior work and decisions
 4. **Read LEARNINGS.md** — Check for applicable learnings (workspace-level)
-5. **Run `git status`** — Understand working tree state (uncommitted changes, dirty state)
-6. **Build objective trace** — Map current level to root
-7. **Assess state** — Determine what's complete, in-progress, blocked
-8. **Compute delta** — What remains to reach success criteria
-9. **Confirm working level** — If hierarchy exists, confirm which level to work at
-10. **Set active project** — Note the active project for session context
+5. **Run `git status` from project directory** — Each project is its own git repo per Repository Model
+6. **Check submodules** — If project uses submodules, note their status
+7. **Build objective trace** — Map current level to root
+8. **Assess state** — Determine what's complete, in-progress, blocked
+9. **Compute delta** — What remains to reach success criteria
+10. **Confirm working level** — If hierarchy exists, confirm which level to work at
+11. **Set active project** — Note the active project for session context
 
 ## Output Format (--list)
 
@@ -60,6 +76,7 @@ Use: /project-start <name>
 ```
 ## Project: [name]
 Path: [relative path to project]
+Mode: Project
 
 ## Objective Trace
 Root: [root objective]
@@ -67,6 +84,7 @@ Root: [root objective]
         └── **Current** ← working here
 
 ## Git State
+- Repository: [project repo path]
 - Branch: [current branch]
 - Status: [clean | uncommitted changes | dirty]
 - Uncommitted files: [list if any]

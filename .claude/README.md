@@ -2,6 +2,39 @@
 
 This directory contains Claude Code configuration aligned with the constitutional document (`CLAUDE.md`).
 
+## Work Modes
+
+Per CLAUDE.md, work scales based on **uncertainty** and **duration**, not complexity:
+
+| Mode | When | Structure | Git |
+|------|------|-----------|-----|
+| **Ad-hoc** | Clear task, single session | None | Working context (not workspace) |
+| **Project** | Multi-session, decisions worth recording | OBJECTIVE.md + LOG.md | Own repository |
+
+**Mode selection:**
+- Start Ad-hoc for bounded tasks
+- Upgrade to Project when scope expands, decisions need recording, or session ends incomplete
+
+**Graduation is automatic with notification.** Once a project exists, maintain it.
+
+## Repository Model
+
+Per CLAUDE.md, **one project = one repository, workspace = metadata only**:
+
+```
+workspace/                    # Git repo for metadata ONLY
+├── CLAUDE.md                 # Constitution (root authority)
+├── LEARNINGS.md              # Workspace-level learnings
+├── .claude/                  # Configuration (this directory)
+└── projects/
+    ├── alpha/                # git repo (project)
+    └── beta/                 # git repo (project)
+```
+
+- **Workspace repo** holds constitution, learnings, and Claude configuration — never tracked work
+- **Project repos** hold all tracked work with OBJECTIVE.md + LOG.md
+- **Subprojects** are subdirectories or submodules within a project repo
+
 ## Constitutional Hierarchy
 
 ```
@@ -14,16 +47,16 @@ CLAUDE.md                    # Constitution (root authority)
 │   │   ├── verify.md
 │   │   └── research.md
 │   ├── skills/              # Derived skills (all reference constitution)
-│   │   ├── project-check/
-│   │   ├── project-management/
-│   │   ├── session-end/
-│   │   ├── hypercontext/
-│   │   └── reasoning/
+│   │   ├── project-start/   # Orient on project to begin working
+│   │   ├── project-create/  # Create new project
+│   │   ├── project-check/   # Comprehensive project audit
+│   │   ├── session-end/     # End session with memory capture
+│   │   └── hypercontext/    # Context visualization
 │   ├── hooks/               # Constitutional enforcement hooks
-│   │   ├── session-start.sh # Loads LEARNINGS.md context
+│   │   ├── session-start.sh # Outputs workspace context
 │   │   └── pre-commit.sh    # Commit message format reminder
 │   └── settings.local.json  # Permissions + hooks configuration
-└── LEARNINGS.md             # Global learnings repository
+└── LEARNINGS.md             # Workspace-level learnings repository
 ```
 
 ## Hooks
@@ -32,16 +65,18 @@ Constitutional enforcement via Claude Code hooks:
 
 | Hook | Event | Purpose |
 |------|-------|---------|
-| `session-start.sh` | SessionStart | Outputs session context (project, learnings, git state) + protocol reminder |
+| `session-start.sh` | SessionStart | Outputs workspace context (learnings, projects) |
 | `pre-commit.sh` | PreToolUse (Bash) | Reminds about commit message format requirements |
 
 ### Session Start Behavior
 
 The `session-start.sh` hook runs automatically and outputs:
 - LEARNINGS.md count (workspace-level)
-- Git branch and dirty state
+- Workspace git status (if transitionally a repo)
 - Available project count
 - Prompt to use `/project-start <name>`
+
+**Per Repository Model:** The workspace is not a git repo; each project is. Git status for a specific project is shown via `/project-start`.
 
 **Project selection is explicit.** The hook does NOT auto-select a project. Use:
 ```
@@ -59,6 +94,7 @@ Permissions are organized by constitutional purpose:
 |---------|-------------------------|
 | **Web** | Research agent operations |
 | **Git** | Traceability System — checkpoints, rollback, verification |
+| **Git submodule** | Repository Model — submodule management for subprojects |
 | **Cargo** | Verification System — Rust build/test commands |
 | **Forge** | Verification System — Solidity build/test commands |
 | **Rustup** | Toolchain management for verification |
@@ -82,6 +118,14 @@ Key constraints enforced:
 ## Skills
 
 All skills include constitutional headers with alignment declarations.
+
+| Skill | Purpose | Invocation |
+|-------|---------|------------|
+| **project-start** | Orient on project to begin working | `/project-start <name>` |
+| **project-create** | Create new project with OBJECTIVE.md + LOG.md | `/project-create <name>` |
+| **project-check** | Comprehensive audit to detect/fix inconsistencies | `/project-check [name]` |
+| **session-end** | End session with appropriate memory capture | `/session-end [quick\|full]` |
+| **hypercontext** | Visualize session context as ASCII map | `/hypercontext` |
 
 ## Adding New Agents/Skills
 

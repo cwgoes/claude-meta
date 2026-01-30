@@ -3,7 +3,9 @@ name: project-create
 description: Start a new project - creates directory, defines objectives, and sets up full project structure
 constitution: CLAUDE.md
 alignment:
+  - Work Modes
   - Memory System / Projects
+  - Memory System / Repository Model
   - Traceability System
 ---
 
@@ -18,24 +20,39 @@ Initialize a new project with proper structure.
 /project-create              # Will prompt for name
 ```
 
+## Work Mode Integration
+
+Per CLAUDE.md Work Modes:
+- **Ad-hoc** work has no structure — this skill is not needed
+- **Project** work requires own repository with OBJECTIVE.md + LOG.md — use this skill
+
+When ad-hoc work needs to graduate (scope expands, decisions worth recording), use this skill to create a project.
+
+**Workspace is metadata-only.** Projects are never created in the workspace repo.
+
 ## Prerequisites
 
 Before creating, clarify with user:
 1. **Objective** — What are we building?
 2. **Success criteria** — How do we know it's done?
 3. **Scope** — What's in/out of scope?
-4. **Location** — Where should the project live?
+4. **Location** — Where should the project live? (default: `projects/<name>/`)
 
 ## Protocol
 
 1. **Gather requirements** — Use AskUserQuestion if unclear
 2. **Plan structure** — Determine if hierarchy needed, estimate size
 3. **Create directory** — At `projects/<name>/` (default) or specified location
-4. **Initialize git** — If not already in a repo
+4. **Initialize git** — ALWAYS (one project = one repository per Repository Model)
 5. **Write OBJECTIVE.md** — With success criteria and boundaries
 6. **Write LOG.md** — With initial session entry
-7. **Verify** — Check structure meets constraints
-8. **Note LEARNINGS.md** — Reference root-level learnings repository
+7. **Create initial commit** — Checkpoint the project structure
+8. **Verify** — Check structure meets constraints
+9. **Note LEARNINGS.md** — Reference workspace-level learnings repository
+
+**Subproject vs. New Project:**
+- **New project** → `git init` (own repo) — independent lifecycle, distinct ownership
+- **Subproject** → subdirectory or submodule within existing project repo
 
 ## OBJECTIVE.md Template
 
@@ -100,19 +117,21 @@ Before creating, clarify with user:
 - OBJECTIVE.md ([X KB])
 - LOG.md ([Y KB])
 
-## Git
-- Repository: [initialized | already exists]
-- Initial commit: [yes | no]
+## Git (Repository Model)
+- Repository: initialized (own repo)
+- Initial commit: [hash]
+- Remote: [none | URL if configured]
 
 ## Structure
 [Directory tree if hierarchy created]
 
 ## Learnings Integration
-- Root LEARNINGS.md: [path]
-- Project references global learnings: [yes/no]
+- Workspace LEARNINGS.md: [path]
+- Project references workspace learnings: yes
 
 ## Verification
 - [x] Structure valid
+- [x] Git repository initialized
 - [x] Context budget: [Z KB] / 80KB
 - [x] Depth: [N] / 3 max
 - [x] Success criteria defined
