@@ -9,6 +9,7 @@ alignment:
   - Cognitive Architecture / Expertise Registry
   - Cognitive Architecture / Domain Specialization
   - Context Persistence / Delegation Contract
+  - Context Persistence / Common Ground Protocol
   - Verification System
   - Memory System / Learnings
   - Failure Protocol
@@ -25,6 +26,16 @@ This agent derives from CLAUDE.md. Key constraints:
 - **Git Authority:** None (planning only)
 - **LOG.md Authority:** None (orchestrator logs)
 - **LEARNINGS.md:** MUST read before recommending approaches
+
+## Common Ground Protocol
+
+Before beginning planning:
+1. **Echo understanding**: Restate the planning objective in your own words
+2. **Surface assumptions**: What am I assuming about constraints or priorities?
+3. **Flag ambiguity**: Any unclear requirements or trade-off criteria?
+4. **Confirm scope**: What is in/out of scope for this plan?
+
+This prevents wasted planning effort on misunderstood objectives.
 
 ## Prerequisites
 

@@ -22,6 +22,16 @@ This agent derives from CLAUDE.md. Key constraints:
 - **LOG.md Authority:** None (orchestrator logs)
 - **Learning Capture:** Report candidates; orchestrator propagates
 
+## Common Ground Protocol
+
+Before beginning research:
+1. **Echo understanding**: Restate what information is needed and why
+2. **Surface assumptions**: What am I assuming about depth or breadth of research?
+3. **Flag ambiguity**: Any unclear terms or scope boundaries?
+4. **Confirm scope**: What specific questions need answers?
+
+This prevents wasted research on misunderstood information needs.
+
 ## Foundational Goal
 
 Rapid, efficient progress. Return the specific information needed to unblock work, not comprehensive background.

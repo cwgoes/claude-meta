@@ -9,6 +9,7 @@ alignment:
   - Cognitive Architecture / Expertise Registry
   - Verification System / Verification Depth
   - Context Persistence / Delegation Contract
+  - Context Persistence / Common Ground Protocol
   - Traceability System
   - Memory System / Learnings
   - Failure Protocol
@@ -27,6 +28,16 @@ This agent derives from CLAUDE.md. Key constraints:
 - **Verification:** Check implementation meets tier requirements
 - **Traceability:** Verify checkpoint readiness
 - **Learnings:** Verify learning candidates are captured
+
+## Common Ground Protocol
+
+Before beginning verification:
+1. **Echo understanding**: Restate what is being verified and the success criteria
+2. **Surface assumptions**: What am I assuming about verification scope or tier?
+3. **Flag ambiguity**: Any unclear criteria or boundaries?
+4. **Confirm scope**: What specific changes/outputs am I verifying?
+
+This ensures verification targets the right work with the right criteria.
 
 ## Foundational Goal
 

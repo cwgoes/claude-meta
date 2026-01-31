@@ -24,17 +24,23 @@ Per CLAUDE.md, work scales based on **uncertainty** and **duration**, not comple
 Per CLAUDE.md, **one project = one repository, workspace = metadata only**:
 
 ```
-workspace/                    # Git repo for metadata ONLY
+workspace/                    # May be git repo for metadata
 ├── CLAUDE.md                 # Constitution (root authority)
-├── LEARNINGS.md              # Workspace-level learnings
+├── LEARNINGS.md              # Cross-project learnings (workspace-level)
 ├── .claude/                  # Configuration (this directory)
 └── projects/
     ├── alpha/                # git repo (project)
+    │   ├── OBJECTIVE.md
+    │   ├── LOG.md
+    │   └── LEARNINGS.md      # Alpha-specific learnings
     └── beta/                 # git repo (project)
+        ├── OBJECTIVE.md
+        ├── LOG.md
+        └── LEARNINGS.md      # Beta-specific learnings
 ```
 
-- **Workspace repo** holds constitution, learnings, and Claude configuration — never tracked work
-- **Project repos** hold all tracked work with OBJECTIVE.md + LOG.md
+- **Workspace** holds constitution, cross-project learnings, and Claude configuration — may be a git repo for version control but never contains tracked work
+- **Project repos** hold all tracked work with OBJECTIVE.md + LOG.md + LEARNINGS.md
 - **Subprojects** are subdirectories or submodules within a project repo
 
 ## Constitutional Hierarchy
@@ -108,7 +114,7 @@ The `session-start.sh` hook runs automatically and outputs:
 - Available project count
 - Prompt to use `/project-start <name>`
 
-**Per Repository Model:** The workspace is not a git repo; each project is. Git status for a specific project is shown via `/project-start`.
+**Per Repository Model:** The workspace may be a git repo for its own metadata; each project is a separate git repo. Git status for a specific project is shown via `/project-start`.
 
 **Project selection is explicit.** The hook does NOT auto-select a project. Use:
 ```
