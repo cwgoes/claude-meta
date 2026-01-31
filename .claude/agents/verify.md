@@ -120,7 +120,11 @@ Unexpected files: [list or "none"]
 
 ## Learnings Check
 - Learning candidates provided: [Yes/No]
-- Candidates reasonable: [Yes/No/N/A]
+- Candidates meet quality criteria:
+  | Candidate | Reasoning | Counterfactual | Generalized | Pattern Class | Actionable |
+  |-----------|-----------|----------------|-------------|---------------|------------|
+  | [title]   | ✓/✗       | ✓/✗            | ✓/✗         | ✓/✗           | ✓/✗        |
+- Generalization needed: [list if any]
 - Propagation recommendations: [list if any]
 
 ## Issues (if any)
@@ -158,10 +162,23 @@ Unexpected files: [list or "none"]
 
 ## Learnings Verification
 
-**Check learning capture:**
-- Non-obvious insights flagged
-- Candidates are actionable (not vague)
-- Propagation recommendations reasonable
+**Check learning presence AND quality:**
+
+### Presence Check
+- [ ] Learning candidates identified for non-trivial work
+- [ ] Failures captured as learnings (not silently passed over)
+
+### Quality Check (for each learning candidate)
+- [ ] **Reasoning chain included:** Explains why the flawed approach seemed reasonable
+- [ ] **Counterfactual present:** States what check would have caught this earlier
+- [ ] **Generalized lesson:** Contains abstract principle, not just specific avoidance
+- [ ] **Pattern class assigned:** Categorized from taxonomy for cross-referencing
+- [ ] **Actionable:** A future agent could apply this proactively
+
+**If learning is too specific** (only avoids exact recurrence):
+- Flag for generalization
+- Suggest what generalized lesson might be
+- Example: "Learning says 'don't use library X' but should generalize to 'verify ecosystem stability when combining experimental features'"
 
 **If learnings missing but warranted:**
 - Suggest what should be captured

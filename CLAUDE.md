@@ -612,6 +612,8 @@ If work doesn't connect to this trace, you may be drifting.
 
 ### Learnings
 
+**System Goal:** Enable Claude to learn general reasoning lessons from specific failures—not just "don't do X" but "recognize when you're about to make type-Y reasoning errors." The aim is that Claude avoids not only the specific mistake but any similar failure arising from the same reasoning pattern.
+
 Learnings are meta-knowledge captured during work that should persist. Learnings exist at multiple levels, each with different scope and propagation rules.
 
 #### Learnings Hierarchy
@@ -663,11 +665,74 @@ Each session's learnings section:
 - **Evidence:** [file:line, measurement, observation]
 - **Scope:** Workspace | Project | Subproject
 - **Propagate:** Yes | No | Review
+
+For Failure type, also include:
+- **Reasoning Error:** [What made this seem like a good approach?]
+- **Counterfactual:** [What check/research/question would have caught this before failing?]
+- **Generalized Lesson:** [Abstract principle that prevents similar failures]
+- **Pattern Class:** [Category from Failure Pattern Classes]
 ```
+
+### Failure Pattern Classes
+
+Categorize failures by *type of reasoning error* to enable cross-referencing and pattern recognition:
+
+| Class | Description | Recognition Signals |
+|-------|-------------|---------------------|
+| **Ecosystem Overconfidence** | Assumed stability based on apparent maturity | "Docs look complete", "widely used", cutting-edge feature stacking |
+| **Insufficient Research** | Acted on partial information | First approach failed with info that was findable beforehand |
+| **Scope Creep** | Task expanded beyond original boundaries | Files touched ≠ files specified, "while I'm here" additions |
+| **Coupling Blindness** | Missed dependencies between components | Change X broke unrelated Y, unexpected test failures |
+| **Complexity Escalation** | Added abstraction before proving necessity | "Flexibility" added speculatively, single-use abstractions |
+| **Verification Gap** | Insufficient testing of assumptions | Worked in dev, failed in prod; edge case missed |
+| **Specification Ambiguity** | Proceeded despite unclear requirements | Built wrong thing, requirements interpreted differently |
+
+**Using Pattern Classes:**
+- Tag each failure learning with its class
+- Cross-reference related failures: "See Also: [FP-003], [FP-007] — same pattern class"
+- Plan agents probe for pattern class risk before recommending approaches
+- Multiple failures in same class across sessions trigger systemic review
+
+**Systemic review** (triggered when pattern detected):
+1. Examine common factors across failures in that class
+2. Identify process gap or missing verification step
+3. Propose constitutional amendment or agent update if warranted
+4. Document finding in LEARNINGS.md with cross-references
 
 ### LEARNINGS.md Files
 
 Each level maintains its own LEARNINGS.md. Higher levels contain broader learnings; lower levels contain narrower ones.
+
+#### LEARNINGS.md Entry Format
+
+```markdown
+### [ID] [Title]
+- **Source:** [project, session date]
+- **Context:** [When this applies]
+- **Insight:** [The specific learning]
+- **Applicability:** [Where to use it]
+
+For Failure Patterns, also include:
+- **Reasoning Error:** [Why this seemed reasonable]
+- **Counterfactual:** [What would have prevented it]
+- **Generalized Lesson:** [Abstract principle]
+- **Pattern Class:** [From taxonomy]
+- **See Also:** [Related learning IDs, if any]
+```
+
+#### Failure Learning Quality Criteria
+
+For Failure-type learnings to be propagation-worthy, they must be *generalizable*, not just specific. Verify:
+
+| Criterion | Test |
+|-----------|------|
+| **Reasoning captured** | Does it explain why the flawed approach seemed reasonable? |
+| **Counterfactual present** | Does it say what would have caught this earlier? |
+| **Generalized lesson** | Is there an abstract principle, not just specific avoidance? |
+| **Pattern class assigned** | Is it categorized for cross-referencing? |
+| **Actionable** | Can a future agent apply this proactively? |
+
+If a learning only avoids exact recurrence, it needs generalization before propagation.
 
 #### Propagation Rules
 
@@ -1040,7 +1105,7 @@ Before spawning parallel implement agents:
 1. Does this solve exactly the stated problem?
 2. Is there code that could be removed?
 3. Have I introduced complexity not requested?
-4. **What did I learn?** (Capture if propagation-worthy)
+4. **What did I learn?** (Capture if propagation-worthy; for failures, use extended format with reasoning chain)
 
 For complex decisions, use triple reflection:
 - **Error avoidance** — What could go wrong?
@@ -1053,7 +1118,7 @@ When stuck or failing:
 1. **Stop** after 2 failed attempts at the same approach
 2. **Stash or reset** — `git stash` or `git checkout .`
 3. **Diagnose** — What specifically failed and why?
-4. **Capture learning** — Document the failure pattern
+4. **Capture learning** — Document using extended Failure format (Reasoning Error, Counterfactual, Generalized Lesson, Pattern Class)
 5. **Decide** — Change approach, decompose, or escalate
 
 **NEVER** retry the same approach indefinitely.

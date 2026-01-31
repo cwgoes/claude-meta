@@ -115,6 +115,18 @@ Use when:
 - Learnings in LEARNINGS.md: [count]
 - Unpropagated learnings: [list if any]
 
+## Failure Learning Quality Audit
+For Failure-type learnings (FP-NNN), verify quality criteria:
+
+| Learning | Reasoning | Counterfactual | Generalized | Pattern Class |
+|----------|-----------|----------------|-------------|---------------|
+| [FP-NNN] | ✓/✗       | ✓/✗            | ✓/✗         | ✓/✗           |
+
+- Failure learnings meeting all criteria: [N/M]
+- Missing fields: [list specific gaps]
+- Quality compliance: [%]
+- Recommendation: [none | generalize before propagating | add missing fields]
+
 ## Drift Analysis
 [Comparison of stated objectives vs. actual work logged]
 - Objective focus: [what OBJECTIVE.md says]

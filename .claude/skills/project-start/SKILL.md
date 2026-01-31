@@ -62,6 +62,43 @@ If project not found, list available projects and ask user to specify.
 11. **Confirm working level** — If hierarchy exists, confirm which level to work at
 12. **Set active project** — Note the active project for session context
 13. **Write context-state.json** — Create or update with status "active" (see Context State below)
+14. **Cross-session pattern detection** — Scan LOG.md for recurring patterns (see below)
+
+## Cross-Session Pattern Detection
+
+After reading LOG.md, scan for recurring patterns:
+
+**Detection Rules:**
+| Pattern | Trigger | Warning |
+|---------|---------|---------|
+| **Repeated pattern class** | 2+ failures in same class within last 5 sessions | Systemic gap in that reasoning area |
+| **Scope creep** | 3+ sessions where actual work exceeded stated scope | Planning/scoping process issue |
+| **Stalled items** | Same "Next" item appears in 3+ consecutive sessions | Blocked work or avoidance |
+| **Failure clustering** | 3+ failures in single session | Approach may be fundamentally flawed |
+
+**Output (if pattern detected):**
+```
+## ⚠️ Pattern Warning
+
+[Pattern type]: [Description]
+- Occurrences: [list sessions/entries]
+- Suggested action: [what to do about it]
+
+Consider: [Prompt for reflection on systemic issue]
+```
+
+**Example:**
+```
+## ⚠️ Pattern Warning
+
+Repeated Pattern Class: Ecosystem Overconfidence
+- Occurrences: FP-001 (2026-01-30), Session 2026-01-28 (undocumented)
+- Suggested action: Before adopting new libraries/features, add explicit "stability verification" step
+
+Consider: Is there a systemic gap in researching technology maturity before adoption?
+```
+
+If no patterns detected, omit this section (don't output "no warnings").
 
 ## Output Format (--list)
 

@@ -100,6 +100,9 @@ Which action? [1/2/3/4]
    - Extract learnings from AUTONOMOUS-LOG.md
    - Deduplicate against LEARNINGS.md
    - Append new learnings with source reference
+   - For Failure-type learnings, ensure extended format:
+     - Reasoning Error, Counterfactual, Generalized Lesson, Pattern Class
+     - If missing, prompt for generalization before propagating
 
 4. **Clean up:**
    ```bash

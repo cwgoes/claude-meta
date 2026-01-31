@@ -147,6 +147,12 @@ Capture learnings in checkpoint entries:
 - These are propagated to LEARNINGS.md during review
 - Focus on reusable insights, not project-specific details
 
+**For failures, include reasoning chain:**
+- **Reasoning Error:** [why this seemed right]
+- **Counterfactual:** [what would have caught it]
+- **Generalized Lesson:** [abstract principle]
+- **Pattern Class:** [from taxonomy: Ecosystem Overconfidence | Insufficient Research | Scope Creep | Coupling Blindness | Complexity Escalation | Verification Gap | Specification Ambiguity]
+
 ## Output Format
 
 No terminal output required — all communication via:

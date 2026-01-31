@@ -73,6 +73,9 @@ Rapid, efficient progress. Return the specific information needed to unblock wor
 ## Learning Candidates
 [Non-obvious insights that might apply beyond this task]
 - [Candidate]: [brief insight]
+
+For failures (e.g., misleading docs, deprecated APIs), include reasoning chain:
+- [Candidate]: [insight] | Reasoning Error: [why it seemed right] | Pattern Class: [from taxonomy]
 ```
 
 ## Failure Protocol

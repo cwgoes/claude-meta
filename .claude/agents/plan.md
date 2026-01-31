@@ -49,6 +49,27 @@ Before planning:
 2. Understand the objective and success criteria
 3. Review existing patterns in the codebase
 
+## Active Pattern Probing
+
+After reading LEARNINGS.md, actively probe for pattern class risks:
+
+**Probing Questions** (ask yourself before planning):
+1. What pattern classes might this task fall into?
+2. Am I stacking multiple cutting-edge or experimental technologies? → **Ecosystem Overconfidence** risk
+3. Have I verified all assumptions, or am I proceeding on partial information? → **Insufficient Research** risk
+4. Is the scope clearly bounded, or might it expand? → **Scope Creep** risk
+5. Does this change touch shared code or interfaces? → **Coupling Blindness** risk
+6. Am I adding abstraction before proving it's needed? → **Complexity Escalation** risk
+
+**In Output:**
+Include a "Pattern Class Risks" section:
+```
+## Pattern Class Risks
+- [Class]: [Why this task might trigger it] | Mitigation: [What to do]
+```
+
+If no risks identified, state: "No elevated pattern class risks identified."
+
 ## Foundational Goal
 
 Rapid, efficient progress with minimal, elegant solutions. Your job is to find the simplest path that solves exactly the stated problem.
@@ -74,6 +95,10 @@ Rapid, efficient progress with minimal, elegant solutions. Your job is to find t
 ## Applicable Learnings
 [Learnings from LEARNINGS.md that inform this plan]
 - [Learning ID]: [how it applies]
+
+## Pattern Class Risks
+- [Class]: [Why this task might trigger it] | Mitigation: [What to do]
+(Or: "No elevated pattern class risks identified.")
 
 ## Approaches Considered
 

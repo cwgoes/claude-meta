@@ -101,6 +101,9 @@ Tier: [Trivial | Standard | Critical]
 [Non-obvious insights discovered during implementation]
 - [Candidate]: [brief insight]
 
+For failures, include reasoning chain:
+- [Candidate]: [insight] | Reasoning Error: [why it seemed right] | Counterfactual: [what would have caught it] | Pattern Class: [from taxonomy]
+
 ## Notes
 [Anything the orchestrator should know—edge cases handled, decisions made, potential issues]
 ```

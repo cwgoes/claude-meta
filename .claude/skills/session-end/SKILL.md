@@ -97,6 +97,31 @@ For multi-session projects or significant work worth preserving.
    - **Propagate to LEARNINGS.md?** [Y/n]
    ```
 
+   **For Failure-type learnings, use extended template:**
+   ```
+   ### [Candidate Title]
+   - **Type:** Failure
+   - **Context:** [when this applies]
+   - **Insight:** [what went wrong]
+   - **Evidence:** [file:line, error message, observation]
+
+   **Reasoning Chain (required for Failures):**
+   - **What I expected:** [the anticipated outcome]
+   - **Why I thought that:** [the reasoning that made this seem right]
+   - **Reasoning Error:** [the flaw in that reasoning]
+   - **Counterfactual:** [what check/research would have prevented this]
+   - **Generalized Lesson:** [abstract principle for future avoidance]
+   - **Pattern Class:** [from taxonomy: Ecosystem Overconfidence | Insufficient Research | Scope Creep | Coupling Blindness | Complexity Escalation | Verification Gap | Specification Ambiguity]
+
+   - **Meets criteria:** [which 2+ capture criteria]
+   - **Propagate to LEARNINGS.md?** [Y/n]
+   ```
+
+   If reasoning chain is incomplete, prompt:
+   - "What made this approach seem reasonable at the time?"
+   - "What single check would have caught this before failing?"
+   - "What's the general principle here, beyond this specific case?"
+
    If no candidates detected, state: "No learning candidates identified this session."
 
 3. **Compose LOG.md entry**
@@ -138,6 +163,13 @@ For multi-session projects or significant work worth preserving.
      - **Context:** [When this applies]
      - **Insight:** [The learning]
      - **Applicability:** [Where to use it]
+
+     For Failure Patterns (FP-NNN), also include:
+     - **Reasoning Error:** [Why this seemed reasonable]
+     - **Counterfactual:** [What would have prevented it]
+     - **Generalized Lesson:** [Abstract principle]
+     - **Pattern Class:** [From taxonomy]
+     - **See Also:** [Related learning IDs, if any]
      ```
    - Update Propagation Log table
 

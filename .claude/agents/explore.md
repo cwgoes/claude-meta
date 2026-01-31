@@ -63,6 +63,9 @@ This prevents wasted exploration on misunderstood objectives.
 ## Learning Candidates
 [Non-obvious insights that might apply beyond this task]
 - [Candidate]: [brief insight]
+
+For failures discovered, include reasoning chain:
+- [Candidate]: [insight] | Reasoning Error: [why it seemed right] | Pattern Class: [from taxonomy]
 ```
 
 ## Failure Protocol
