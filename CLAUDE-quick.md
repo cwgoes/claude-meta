@@ -53,6 +53,14 @@ Default to ad-hoc. Graduate to project when scope expands. Autonomous only on ex
 
 ## Learning Capture
 
+**Hierarchy:** Workspace → Project → Subproject (each has own LEARNINGS.md)
+
+| Level | Scope |
+|-------|-------|
+| Workspace | Cross-project (tools, languages, process) |
+| Project | Project domain/stack specific |
+| Subproject | Component-specific (optional) |
+
 **At session end, ACTIVELY scan for:**
 - Failures → Failure pattern
 - Non-obvious solutions → Technical pattern
@@ -60,7 +68,7 @@ Default to ad-hoc. Graduate to project when scope expands. Autonomous only on ex
 
 **Capture criteria (≥2):** Reusable, non-documented, cost-saving, failure-derived.
 
-**Plan agents MUST read LEARNINGS.md before recommending approaches.**
+**Plan agents MUST read all applicable LEARNINGS.md levels before recommending approaches.**
 
 ## Agent Spawning
 

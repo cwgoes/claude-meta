@@ -609,26 +609,43 @@ If work doesn't connect to this trace, you may be drifting.
 
 ### Learnings
 
-Learnings are meta-knowledge captured during work that should persist.
+Learnings are meta-knowledge captured during work that should persist. Learnings exist at multiple levels, each with different scope and propagation rules.
 
-**Types:**
+#### Learnings Hierarchy
+
+```
+workspace/LEARNINGS.md              # Cross-project learnings
+└── projects/alpha/LEARNINGS.md     # Alpha-specific learnings
+    └── subprojects/X/LEARNINGS.md  # X-specific (optional)
+```
+
+| Level | Scope | Examples |
+|-------|-------|----------|
+| **Workspace** | Applies across multiple projects | Tool behaviors, language gotchas, process patterns |
+| **Project** | Specific to this project's domain/stack | API quirks, architecture decisions, domain patterns |
+| **Subproject** | Specific to subproject (optional) | Component-specific patterns; omit if parent suffices |
+
+#### Types
+
 - **Technical** — Code patterns, library behaviors, performance insights
 - **Process** — Workflow improvements, communication patterns
 - **Pattern** — Reusable solutions to recurring problems
 - **Failure** — What didn't work and why
 
-**Capture criteria (must meet ≥2):**
+#### Capture Criteria (must meet ≥2)
+
 - **Reusable**: Would apply to ≥2 other tasks you can name
 - **Non-documented**: Not in official docs, READMEs, or obvious from code
 - **Cost-saving**: Discovering this again would take >5 minutes
 - **Failure-derived**: Learned from something that didn't work
 
-**Skip capture when:**
-- Insight is project-specific with no broader application
-- Already exists in LEARNINGS.md (check first)
+#### Skip Capture When
+
+- Insight is narrower than current level's scope
+- Already exists at this or higher level (check first)
 - Obvious to anyone familiar with the technology
 
-**When uncertain:** Capture with `Propagate: No`. Review at session end.
+**When uncertain:** Capture at project level with `Propagate: Review`. Evaluate scope at session end.
 
 ### LOG.md Learning Format
 
@@ -641,18 +658,41 @@ Each session's learnings section:
 - **Context:** [When this applies]
 - **Insight:** [The actual learning]
 - **Evidence:** [file:line, measurement, observation]
-- **Propagate:** Yes/No
+- **Scope:** Workspace | Project | Subproject
+- **Propagate:** Yes | No | Review
 ```
 
-### LEARNINGS.md
+### LEARNINGS.md Files
 
-Global repository at project root. Plan agents MUST read before recommending approaches.
+Each level maintains its own LEARNINGS.md. Higher levels contain broader learnings; lower levels contain narrower ones.
 
-**Propagation rules:**
-1. Learnings marked `Propagate: Yes` in LOG.md
-2. Main agent reviews at session end
-3. Deduplicate against existing LEARNINGS.md
-4. Add with source reference
+#### Propagation Rules
+
+**Upward propagation (narrow → broad):**
+1. Learning captured in LOG.md with `Propagate: Yes` and `Scope: [higher level]`
+2. At session end, add to appropriate LEARNINGS.md
+3. Deduplicate against existing entries at target level
+
+**Downward visibility (broad → narrow):**
+- Lower levels inherit visibility of all higher levels
+- No duplication needed — just read up the chain
+
+**Propagation heuristic:**
+| If learning applies to... | Capture at |
+|---------------------------|------------|
+| This subproject only | Subproject (or omit if trivial) |
+| This project's domain/stack | Project |
+| Multiple projects or general tooling | Workspace |
+
+#### Plan Agent Requirements
+
+Plan agents MUST read learnings before recommending approaches:
+
+1. **Workspace LEARNINGS.md** — Always read
+2. **Project LEARNINGS.md** — Read if working within a project
+3. **Subproject LEARNINGS.md** — Read if working within a subproject
+
+Search all applicable levels for relevant entries. Note applicable learnings by ID in plan output.
 
 ### Session Protocol
 
@@ -669,7 +709,7 @@ Once project selected, the protocol executes:
 1. Resolve project path (`projects/<name>/` or `<name>/`)
 2. Read OBJECTIVE.md — success criteria
 3. Read LOG.md — decision history
-4. Read LEARNINGS.md — applicable learnings (workspace-level)
+4. Read LEARNINGS.md — all applicable levels (workspace + project + subproject if exists)
 5. `git status` — working tree state
 6. Build objective trace
 7. Confirm working level
