@@ -82,7 +82,7 @@ Before launching:
    - Session ID: <session_id>
 
    Monitor: tail -f projects/<project>/session-<timestamp>.jsonl
-   Review:  /review-autonomous <project>
+   Review:  /autonomous-review <project>
    ```
 
 ### Resume Run
@@ -151,12 +151,12 @@ Continues from last checkpoint with new guidance.
 
 ## Integration
 
-### With /review-autonomous
-After autonomous execution completes or is interrupted, use `/review-autonomous` to:
+### With /autonomous-review
+After autonomous execution completes or is interrupted, use `/autonomous-review` to:
 - View checkpoint history
 - Approve and merge
 - Rollback to checkpoint
 - Provide direction and resume
 
 ### With /session-end
-Autonomous mode manages its own session lifecycle. Do not use `/session-end` for autonomous runs — use `/review-autonomous` instead.
+Autonomous mode manages its own session lifecycle. Do not use `/session-end` for autonomous runs — use `/autonomous-review` instead.

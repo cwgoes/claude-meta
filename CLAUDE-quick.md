@@ -20,31 +20,47 @@ Quick reference for agents. Full specification: [CLAUDE.md](CLAUDE.md)
 
 Default to ad-hoc. Graduate to project when scope expands. Autonomous only on explicit `/autonomous` invocation.
 
-## Context Invariants
+## Context State
 
-When project active, always know:
-- Project path
-- Current objective (1 sentence)
-- Objective trace (root → current)
-- Working level
+**File:** `<project>/context-state.json` — written by skills, read by statusline.
 
-**Can't state these? Refresh immediately.**
+**Write triggers:**
+| Event | Action |
+|-------|--------|
+| `/project-start` | Read if exists, create if missing, set status "active" |
+| Hierarchy navigation | Update trace, level, objective |
+| `/session-end` | Update status to "paused" or "completed" |
 
-## Override Protocol
-
-User can say:
-- "Skip verification" → Trivial tier
-- "No logging" → Skip LOG.md
-- "Quick mode" → Ad-hoc behavior
-- "Minimal ceremony" → All above
+**Can't state project/objective/trace? Refresh immediately.**
 
 ## Verification Tiers
 
 | Tier | Scope | Required |
 |------|-------|----------|
-| Trivial | <10 lines | git diff + inspection |
-| Standard | Multi-file | Automated checks |
-| Critical | Architecture | Full record + user review |
+| Trivial | <10 lines, 1 file | git diff + inspection |
+| Standard | Multi-file | Automated checks + LOG.md record |
+| Critical | Architecture, security | Full record + user review |
+
+**Pre-commit hook warns if Standard+ without verification record.**
+
+## Checkpoint Model
+
+| Level | When | What |
+|-------|------|------|
+| Lightweight | Incremental progress | Git commit only |
+| Full | Session end, decisions | Git commit + LOG.md entry |
+| Autonomous | Decision/discovery/reversal | Git tag + AUTONOMOUS-LOG.md |
+
+## Learning Capture
+
+**At session end, ACTIVELY scan for:**
+- Failures → Failure pattern
+- Non-obvious solutions → Technical pattern
+- Workflow improvements → Process pattern
+
+**Capture criteria (≥2):** Reusable, non-documented, cost-saving, failure-derived.
+
+**Plan agents MUST read LEARNINGS.md before recommending approaches.**
 
 ## Agent Spawning
 
@@ -56,6 +72,22 @@ Trace: [root → current]
 Scope: [boundaries]
 Success criteria: [how to verify]
 ```
+
+## Autonomous Checkpoints
+
+Checkpoint when:
+- **Decision** — Chose approach A over B
+- **Discovery** — Found unexpected behavior
+- **Reversal** — Approach failed, changing direction
+- **Milestone** — Significant progress
+
+## Override Protocol
+
+User can say:
+- "Skip verification" → Trivial tier
+- "No logging" → Skip LOG.md
+- "Quick mode" → Ad-hoc behavior
+- "Minimal ceremony" → All above
 
 ## Anti-Patterns
 

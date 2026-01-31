@@ -60,16 +60,22 @@ Use when:
 | **Learnings** | Propagation-worthy learnings captured |
 | **Context State** | `<project>/context-state.json` exists and is current |
 | **State Accuracy** | Context state matches OBJECTIVE.md content |
+| **Verification Compliance** | Standard+ commits have verification records |
+| **Plan Learnings** | Plan sessions reference LEARNINGS.md |
+| **Autonomous Format** | AUTONOMOUS-LOG.md valid (if exists) |
 
 ## Protocol
 
 1. **Resolve project** — Find and validate project path
 2. **Run `git status`** — Check for uncommitted work
-3. **Check `git log`** — Audit commit message formats
+3. **Check `git log`** — Audit commit message formats and tier compliance
 4. **Read LEARNINGS.md** — Check for propagation gaps
 5. **Verify each checklist item** — Systematic pass/fail/warning
 6. **Analyze drift** — Compare OBJECTIVE.md vs LOG.md work
-7. **Report findings** — Issues with severity and remediation
+7. **Audit verification compliance** — Check Standard+ commits have records
+8. **Audit plan learnings** — Check plans reference LEARNINGS.md
+9. **Audit autonomous format** — If AUTONOMOUS-LOG.md exists, validate
+10. **Report findings** — Issues with severity and remediation
 
 ## Output Format
 
@@ -122,6 +128,78 @@ Use when:
 - Objective matches OBJECTIVE.md: [yes/no]
 - Status accurate: [yes/no]
 - Recommendation: [none | update state | refresh context]
+
+## Verification Compliance Audit
+
+Audit whether verification protocols are being followed.
+
+**Method:**
+1. Get commits since last session: `git log --oneline --since="[last LOG.md session date]"`
+2. For each commit, estimate tier from diff size
+3. Check LOG.md for corresponding verification records
+
+**Output:**
+```
+- Commits since last session: [N]
+- Estimated Standard+ tier commits: [N]
+- Commits with verification record in LOG.md: [N]
+- Compliance rate: [N/M = %]
+- Missing verification (Standard+ without record):
+  - [commit hash]: [summary] — [estimated tier]
+  - ...
+```
+
+**Interpretation:**
+| Compliance | Status |
+|------------|--------|
+| 100% | Pass |
+| 75-99% | Warning — minor gaps |
+| <75% | Fail — systematic skip |
+
+## Plan Agent Audit
+
+Check whether Plan agents consulted LEARNINGS.md.
+
+**Method:**
+1. Search LOG.md for plan-related entries (approach selection, trade-off analysis)
+2. Check if "Applicable Learnings" or LEARNINGS.md reference exists
+3. Flag plans without learnings consultation
+
+**Output:**
+```
+- Planning sessions in LOG.md: [N]
+- Plans citing LEARNINGS.md: [N]
+- Plans without learnings reference:
+  - Session [date]: [plan topic]
+  - ...
+- Compliance rate: [%]
+```
+
+## Autonomous Audit
+
+If AUTONOMOUS-LOG.md exists, validate format and completeness.
+
+**Checks:**
+| Check | Expected |
+|-------|----------|
+| File exists | If autonomous mode was used |
+| Run header present | Configuration section with branch, budget, session ID |
+| Checkpoints numbered | Sequential checkpoint-NNN |
+| Checkpoint format valid | Context, Choice/Finding/Problem, Rationale, Confidence, Files, Tag |
+| Termination recorded | Reason, Elapsed, Summary, Unresolved, For Review |
+| Tags exist | `git tag` includes checkpoint-NNN for each logged checkpoint |
+
+**Output:**
+```
+- AUTONOMOUS-LOG.md exists: [yes/no/N/A]
+- Runs logged: [N]
+- Last run: [date] — [status]
+- Checkpoints: [N]
+- Tags matching checkpoints: [N/M]
+- Format valid: [yes/no]
+- Issues:
+  - [issue description]
+```
 
 ## Issues
 1. [Issue] — [severity: low/medium/high] — [remediation]

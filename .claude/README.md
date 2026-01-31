@@ -54,9 +54,10 @@ CLAUDE.md                    # Constitution (root authority)
 │   │   ├── project-create/  # Create new project
 │   │   ├── project-check/   # Comprehensive project audit
 │   │   ├── session-end/     # End session with memory capture
+│   │   ├── commit/          # Create commit with verification awareness
 │   │   ├── hypercontext/    # Context visualization
 │   │   ├── autonomous/      # Launch autonomous execution
-│   │   └── review-autonomous/ # Review and act on autonomous results
+│   │   └── autonomous-review/ # Review and act on autonomous results
 │   ├── hooks/               # Constitutional enforcement hooks
 │   │   ├── session-start.sh # Outputs workspace context
 │   │   └── pre-commit.sh    # Commit message format reminder
@@ -167,9 +168,10 @@ All skills include constitutional headers with alignment declarations.
 | **project-create** | Create new project with OBJECTIVE.md + LOG.md | `/project-create <name>` |
 | **project-check** | Comprehensive audit to detect/fix inconsistencies | `/project-check [name]` |
 | **session-end** | End session with appropriate memory capture | `/session-end [quick\|full]` |
+| **commit** | Create commit with verification tier awareness | `/commit [message]` |
 | **hypercontext** | Visualize session context as ASCII map | `/hypercontext` |
 | **autonomous** | Launch unattended execution with time budget | `/autonomous <project> [--budget <time>]` |
-| **review-autonomous** | Review results and act (approve/rollback/direct) | `/review-autonomous <project>` |
+| **autonomous-review** | Review results and act (approve/rollback/direct) | `/autonomous-review <project>` |
 
 ## Autonomous Mode
 
@@ -185,7 +187,7 @@ Autonomous mode enables unattended execution with full traceability for async re
 /autonomous my-project --budget 4h
 
 # Review results
-/review-autonomous my-project
+/autonomous-review my-project
 ```
 
 ### Requirements
@@ -199,7 +201,7 @@ Autonomous mode enables unattended execution with full traceability for async re
 2. **Execute:** Claude works toward OBJECTIVE.md success criteria
 3. **Checkpoint:** Tags created at decisions, discoveries, reversals
 4. **Terminate:** On success, budget exhaustion, or uncertainty
-5. **Review:** `/review-autonomous` to approve, rollback, or direct
+5. **Review:** `/autonomous-review` to approve, rollback, or direct
 
 ### Artifacts
 

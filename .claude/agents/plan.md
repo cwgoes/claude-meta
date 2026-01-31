@@ -29,7 +29,12 @@ This agent derives from CLAUDE.md. Key constraints:
 ## Prerequisites
 
 Before planning:
-1. **Read LEARNINGS.md** — Check for applicable prior learnings
+1. **Read LEARNINGS.md** — REQUIRED, not optional
+   - Read the file: `LEARNINGS.md` at workspace root
+   - Scan all sections: Technical Patterns, Process Patterns, Failure Patterns
+   - Note applicable learnings by ID (e.g., "FP-001 applies because...")
+   - If no learnings apply, state: "Reviewed LEARNINGS.md — no applicable entries"
+   - **If you skip this step, explicitly note:** "Warning: LEARNINGS.md not consulted"
 2. Understand the objective and success criteria
 3. Review existing patterns in the codebase
 

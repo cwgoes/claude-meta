@@ -169,5 +169,5 @@ else
 fi
 echo "========================================"
 echo ""
-echo "Review with: /review-autonomous $PROJECT"
+echo "Review with: /autonomous-review $PROJECT"
 echo "Output log:  $OUTPUT_FILE"

@@ -1,5 +1,5 @@
 ---
-name: review-autonomous
+name: autonomous-review
 description: Review autonomous execution results and take action (approve, rollback, direct)
 constitution: CLAUDE.md
 alignment:
@@ -7,14 +7,14 @@ alignment:
   - Traceability System
 ---
 
-# Review Autonomous Skill
+# Autonomous Review Skill
 
 Reviews autonomous execution results and offers actions: approve, rollback, direct, or discard.
 
 ## Invocation
 
 ```
-/review-autonomous <project> [--checkpoint <N>]
+/autonomous-review <project> [--checkpoint <N>]
 ```
 
 **Arguments:**
@@ -144,7 +144,7 @@ Which action? [1/2/3/4]
 
    Options:
    - /autonomous <project> --resume  # Continue from here
-   - /review-autonomous <project>    # Review again
+   - /autonomous-review <project>    # Review again
    ```
 
 ### Action: Direct

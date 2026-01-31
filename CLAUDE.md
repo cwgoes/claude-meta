@@ -113,7 +113,7 @@ Project mode (interactive)
   ↓ user invokes /autonomous
 Autonomous mode (unattended)
   ↓ terminates or budget exhausted
-Project mode (review via /review-autonomous)
+Project mode (review via /autonomous-review)
 ```
 
 ---
@@ -417,7 +417,7 @@ User can steer autonomous execution async via DIRECTION.md:
 
 ### Review Protocol
 
-Invoke via `/review-autonomous <project>`:
+Invoke via `/autonomous-review <project>`:
 
 1. Parse AUTONOMOUS-LOG.md
 2. Show checkpoint summary with decision points
@@ -759,6 +759,40 @@ When context has been compressed (detected by gaps in recall or thin context fee
 4. **Resume** — Continue work with restored context
 
 This is not failure — it's normal operation for long sessions.
+
+#### Hierarchy Navigation
+
+When working level within a project changes, update context-state.json immediately.
+
+**Navigation events:**
+
+| Event | Action |
+|-------|--------|
+| **Enter subproject** | Update trace, level → "subproject", objective → subproject's |
+| **Return to parent** | Update trace, level → "project", objective → parent's |
+| **Move to sibling** | Update trace (same depth), objective → sibling's |
+
+**Detection:**
+- **Explicit:** User directs "work on subproject X" or "return to parent"
+- **Implicit:** File operations consistently target different OBJECTIVE.md scope
+- **Delegation:** Spawning agent for subproject work
+
+**On navigation:**
+1. Read target level's OBJECTIVE.md
+2. Rebuild trace from root to new current level
+3. Update context-state.json:
+   ```json
+   {
+     "timestamp": "<ISO 8601 now>",
+     "objective": "<new level's objective>",
+     "trace": ["<root>", "<parent if any>", "<current>"],
+     "level": "project | subproject",
+     "status": "active"
+   }
+   ```
+4. Statusline reflects new position immediately
+
+**Heuristic:** If the files you're reading/writing are under a subproject's directory, you may have implicitly navigated. Verify and update context state.
 
 #### Delegation Contract
 

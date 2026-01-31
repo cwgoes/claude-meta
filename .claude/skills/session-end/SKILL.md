@@ -68,7 +68,38 @@ For multi-session projects or significant work worth preserving.
    - `git diff --stat` — scope of changes
    - Review work done this session
 
-2. **Compose LOG.md entry**
+2. **Extract learning candidates** (ACTIVE — do not skip)
+
+   Scan the session for learning candidates:
+
+   | Signal | Learning Type |
+   |--------|---------------|
+   | Error encountered and resolved | Failure |
+   | Non-obvious solution discovered | Technical |
+   | Workflow improvement made | Process |
+   | Pattern worth reusing | Pattern |
+
+   **Apply capture criteria** (must meet ≥2):
+   - Reusable: applies to ≥2 other tasks you can name
+   - Non-documented: not obvious from official docs
+   - Cost-saving: rediscovery would take >5 minutes
+   - Failure-derived: learned from something that didn't work
+
+   **Present candidates to user:**
+   ```
+   ## Learning Candidates Detected
+
+   ### [Candidate 1]
+   - **Type:** [Technical|Process|Pattern|Failure]
+   - **Context:** [when this applies]
+   - **Insight:** [the learning]
+   - **Meets criteria:** [which 2+ criteria]
+   - **Propagate to LEARNINGS.md?** [Y/n]
+   ```
+
+   If no candidates detected, state: "No learning candidates identified this session."
+
+3. **Compose LOG.md entry**
    ```markdown
    ## Session [YYYY-MM-DD HH:MM] — [brief title]
 
@@ -79,7 +110,7 @@ For multi-session projects or significant work worth preserving.
    - [Choice]: [Rationale]
 
    ### Learnings
-   [If any discovered]
+   [From step 2 — include approved candidates]
 
    #### [Title]
    - **Type:** Technical | Process | Pattern | Failure
@@ -96,16 +127,32 @@ For multi-session projects or significant work worth preserving.
    - [What to do when resuming]
    ```
 
-3. **Propagate learnings** (if any marked `Propagate: Yes`)
+4. **Propagate learnings** (if any marked `Propagate: Yes`)
    - Read LEARNINGS.md
    - Check for duplicates
-   - Append new learnings with source reference
+   - Determine next ID (LP-NNN for Technical, PP-NNN for Process, FP-NNN for Failure)
+   - Append new learnings with source reference:
+     ```markdown
+     ### [ID] [Title]
+     - **Source:** [project, session date]
+     - **Context:** [When this applies]
+     - **Insight:** [The learning]
+     - **Applicability:** [Where to use it]
+     ```
+   - Update Propagation Log table
 
-4. **Commit decision**
+5. **Update context-state.json**
+   - Read current `<project-path>/context-state.json`
+   - Update:
+     - `timestamp`: current time
+     - `status`: "completed" if success criteria met, else "paused"
+   - Write updated file
+
+6. **Commit decision**
    - If verified and complete → offer to commit with proper message format
    - If unverified or incomplete → do not commit, note in LOG.md
 
-5. **Output session summary**
+7. **Output session summary**
 
 **Output:**
 ```
@@ -224,14 +271,27 @@ If work was done but not verified:
 Update each active project's `<project-path>/context-state.json` on session end:
 
 **Full mode:**
-- Update status to "paused" if work incomplete
-- Update status to "completed" if criteria met
-- Timestamp reflects session end time
+1. Read current context-state.json
+2. Update fields:
+   ```json
+   {
+     "timestamp": "[ISO 8601 now]",
+     "status": "completed" | "paused"
+   }
+   ```
+   - Use "completed" if all success criteria in OBJECTIVE.md are met
+   - Use "paused" otherwise
+3. Write updated file
 
 **Quick mode:**
-- Update status to "paused" for any active projects
+1. If context-state.json exists, update:
+   - `timestamp`: current time
+   - `status`: "paused"
+2. If missing, skip (quick mode doesn't create state)
 
 **Multi-project sessions:** If multiple projects were active, update each project's context-state.json appropriately based on work done in that project.
+
+**Verification:** After writing, the statusline should reflect the updated status on next refresh.
 
 ---
 

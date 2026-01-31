@@ -53,14 +53,15 @@ If project not found, list available projects and ask user to specify.
 2. **Read OBJECTIVE.md** — Understand what we're building and success criteria
 3. **Read LOG.md** — Understand prior work and decisions
 4. **Read LEARNINGS.md** — Check for applicable learnings (workspace-level)
-5. **Run `git status` from project directory** — Each project is its own git repo per Repository Model
-6. **Check submodules** — If project uses submodules, note their status
-7. **Build objective trace** — Map current level to root
-8. **Assess state** — Determine what's complete, in-progress, blocked
-9. **Compute delta** — What remains to reach success criteria
-10. **Confirm working level** — If hierarchy exists, confirm which level to work at
-11. **Set active project** — Note the active project for session context
-12. **Write context-state.json** — Externalize context invariants for statusline verification
+5. **Read context-state.json** — If exists, display prior session info (see Context State below)
+6. **Run `git status` from project directory** — Each project is its own git repo per Repository Model
+7. **Check submodules** — If project uses submodules, note their status
+8. **Build objective trace** — Map current level to root
+9. **Assess state** — Determine what's complete, in-progress, blocked
+10. **Compute delta** — What remains to reach success criteria
+11. **Confirm working level** — If hierarchy exists, confirm which level to work at
+12. **Set active project** — Note the active project for session context
+13. **Write context-state.json** — Create or update with status "active" (see Context State below)
 
 ## Output Format (--list)
 
@@ -117,22 +118,47 @@ OBJECTIVE.md: [X KB] | LOG.md: [Y KB] | Total: [Z KB] / ~80KB limit
 [Any observations: scope creep, constraint violations, suggested approach]
 ```
 
-## State Externalization
+## Context State
 
-After completing orientation, write `<project-path>/context-state.json` (per CLAUDE.md Context Persistence):
+Manages `<project-path>/context-state.json` for statusline display and session continuity.
 
-```json
-{
-  "timestamp": "[ISO 8601]",
-  "project": "[project path]",
-  "objective": "[1-line summary from OBJECTIVE.md]",
-  "trace": ["root objective", "parent if any", "current"],
-  "level": "project | subproject",
-  "status": "active"
-}
-```
+### On Project Start
 
-**Per-project state:** Each project maintains its own context-state.json at the project root. The statusline displays whichever project's state was most recently updated.
+1. **Check for existing file:**
+   ```bash
+   cat <project-path>/context-state.json 2>/dev/null
+   ```
+
+2. **If exists — read and display:**
+   ```
+   Prior Session: [timestamp from file]
+   Status: [status from file]
+   Last Objective: [objective from file]
+   ```
+   Then update timestamp and status to "active".
+
+3. **If missing — create:**
+   - Extract objective summary: first heading or sentence from OBJECTIVE.md
+   - Build trace from objective hierarchy
+   - Set status to "active"
+
+4. **Write context-state.json:**
+   ```json
+   {
+     "timestamp": "[ISO 8601 now]",
+     "project": "[project path]",
+     "objective": "[1-line summary from OBJECTIVE.md]",
+     "trace": ["root objective", "parent if any", "current"],
+     "level": "project | subproject",
+     "status": "active"
+   }
+   ```
+
+### File Location
+
+`<project-path>/context-state.json` — at project root alongside OBJECTIVE.md and LOG.md.
+
+**Per-project state:** Each project maintains its own context-state.json. The statusline displays whichever project's state was most recently updated.
 
 **Multiple windows:** Different Claude Code windows can work on different projects. Each window updates its project's context-state.json independently.
 
