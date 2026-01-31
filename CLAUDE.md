@@ -87,7 +87,7 @@ Ad-hoc (working) → scope expands → create project repo with OBJECTIVE.md + L
 ```
 This is cheaper than premature structure.
 
-**Workspace repo is metadata-only.** The workspace repository holds constitutional documents (CLAUDE.md, LEARNINGS.md) and Claude configuration (.claude/). All tracked work lives in project repositories.
+**Workspace is metadata-only.** The workspace holds constitutional documents (CLAUDE.md, LEARNINGS.md) and Claude configuration (.claude/). It may be a git repo for version-controlling this metadata, but all tracked *work* lives in project repositories.
 
 ### Autonomous Mode
 
@@ -474,7 +474,7 @@ Invoke via `/autonomous-review <project>`:
 | Repository | Purpose | Contents |
 |------------|---------|----------|
 | **Workspace** | Constitutional metadata | CLAUDE.md, LEARNINGS.md, .claude/ configuration |
-| **Project** | Tracked work | OBJECTIVE.md, LOG.md, code, artifacts |
+| **Project** | Tracked work | OBJECTIVE.md, LOG.md, LEARNINGS.md, code, artifacts |
 
 **Work mode implications:**
 
@@ -503,29 +503,32 @@ Each project repository ensures:
 
 **Workspace structure:**
 ```
-workspace/                    # Not a git repo itself
+workspace/                    # May be git repo for metadata
 ├── CLAUDE.md                 # Constitution (workspace-level)
-├── LEARNINGS.md              # Shared learnings (workspace-level)
+├── LEARNINGS.md              # Cross-project learnings (workspace-level)
 ├── .claude/                  # Agents, skills, settings
 └── projects/
     ├── alpha/                # git repo
     │   ├── OBJECTIVE.md
     │   ├── LOG.md
+    │   ├── LEARNINGS.md      # Alpha-specific learnings
     │   └── src/
     └── beta/                 # git repo
         ├── OBJECTIVE.md
         ├── LOG.md
+        ├── LEARNINGS.md      # Beta-specific learnings
         ├── core/             # submodule (own repo, pinned)
         └── subprojects/
             └── beta-utils/   # subdirectory (same repo)
                 ├── OBJECTIVE.md
-                └── LOG.md
+                ├── LOG.md
+                └── LEARNINGS.md  # Optional, component-specific
 ```
 
 **Key distinctions:**
 | Level | Git Status | Scope |
 |-------|------------|-------|
-| Workspace | Not a repo | Constitution, learnings, tooling |
+| Workspace | Optional repo (metadata only) | Constitution, cross-project learnings, tooling |
 | Project | Repository root | Independent codebase + history |
 | Subproject (dir) | Subdirectory | Decomposes parent, shares repo |
 | Subproject (submodule) | Submodule | Independent history, pinned in parent |
@@ -582,13 +585,13 @@ project/                      # git repo root
 1. Parent OBJECTIVE.md references subprojects by path (never inlines their content)
 2. Parent defines interface specs — what each subproject must provide
 3. Each subproject has independent OBJECTIVE.md + LOG.md
-4. Subprojects share root LEARNINGS.md (single source of truth)
+4. Learnings follow the multi-level hierarchy (see Learnings section)
 
 **Scope rules at each level:**
 - **Read/write** within declared boundaries
 - **Read-only** parent levels (modifications require user consent)
 - **Read-only** sibling interfaces (delegate internals to sibling agents)
-- **Append** to own LOG.md; propagate learnings to root LEARNINGS.md
+- **Append** to own LOG.md; propagate learnings to appropriate LEARNINGS.md level
 
 **Objective trace:**
 Every level maintains lineage to root:
