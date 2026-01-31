@@ -10,10 +10,12 @@ Per CLAUDE.md, work scales based on **uncertainty** and **duration**, not comple
 |------|------|-----------|-----|
 | **Ad-hoc** | Clear task, single session | None | Working context (not workspace) |
 | **Project** | Multi-session, decisions worth recording | OBJECTIVE.md + LOG.md | Own repository |
+| **Autonomous** | Unattended execution (explicit invocation only) | Project + AUTONOMOUS-LOG.md | Dedicated branch |
 
 **Mode selection:**
 - Start Ad-hoc for bounded tasks
 - Upgrade to Project when scope expands, decisions need recording, or session ends incomplete
+- Autonomous only on explicit `/autonomous` invocation — never auto-selected
 
 **Graduation is automatic with notification.** Once a project exists, maintain it.
 
@@ -45,16 +47,22 @@ CLAUDE.md                    # Constitution (root authority)
 │   │   ├── plan.md
 │   │   ├── implement.md
 │   │   ├── verify.md
-│   │   └── research.md
+│   │   ├── research.md
+│   │   └── autonomous.md    # Unattended execution agent
 │   ├── skills/              # Derived skills (all reference constitution)
 │   │   ├── project-start/   # Orient on project to begin working
 │   │   ├── project-create/  # Create new project
 │   │   ├── project-check/   # Comprehensive project audit
 │   │   ├── session-end/     # End session with memory capture
-│   │   └── hypercontext/    # Context visualization
+│   │   ├── hypercontext/    # Context visualization
+│   │   ├── autonomous/      # Launch autonomous execution
+│   │   └── review-autonomous/ # Review and act on autonomous results
 │   ├── hooks/               # Constitutional enforcement hooks
 │   │   ├── session-start.sh # Outputs workspace context
 │   │   └── pre-commit.sh    # Commit message format reminder
+│   ├── docker/              # Container definitions for isolation
+│   │   ├── autonomous.Dockerfile
+│   │   └── run-autonomous.sh
 │   └── settings.local.json  # Permissions + hooks configuration
 └── LEARNINGS.md             # Workspace-level learnings repository
 ```
@@ -160,6 +168,59 @@ All skills include constitutional headers with alignment declarations.
 | **project-check** | Comprehensive audit to detect/fix inconsistencies | `/project-check [name]` |
 | **session-end** | End session with appropriate memory capture | `/session-end [quick\|full]` |
 | **hypercontext** | Visualize session context as ASCII map | `/hypercontext` |
+| **autonomous** | Launch unattended execution with time budget | `/autonomous <project> [--budget <time>]` |
+| **review-autonomous** | Review results and act (approve/rollback/direct) | `/review-autonomous <project>` |
+
+## Autonomous Mode
+
+Autonomous mode enables unattended execution with full traceability for async review. See CLAUDE.md "Autonomous Execution" section for full specification.
+
+### Quick Start
+
+```bash
+# Launch autonomous execution (2h default budget)
+/autonomous my-project
+
+# Launch with custom budget
+/autonomous my-project --budget 4h
+
+# Review results
+/review-autonomous my-project
+```
+
+### Requirements
+
+- Project must have OBJECTIVE.md with verifiable success criteria
+- Docker must be available (autonomous mode runs in isolated container)
+
+### How It Works
+
+1. **Launch:** `/autonomous` creates branch `auto/<project>-<timestamp>`
+2. **Execute:** Claude works toward OBJECTIVE.md success criteria
+3. **Checkpoint:** Tags created at decisions, discoveries, reversals
+4. **Terminate:** On success, budget exhaustion, or uncertainty
+5. **Review:** `/review-autonomous` to approve, rollback, or direct
+
+### Artifacts
+
+| File | Purpose |
+|------|---------|
+| `AUTONOMOUS-LOG.md` | Structured decision log for async review |
+| `session-<timestamp>.jsonl` | Full execution trace |
+| `DIRECTION.md` | User guidance for resumed runs |
+| `checkpoint-NNN` tags | Rollback points |
+
+### Docker Setup
+
+Build the autonomous container:
+```bash
+docker build -t claude-autonomous -f .claude/docker/autonomous.Dockerfile .
+```
+
+Or use the wrapper script:
+```bash
+.claude/docker/run-autonomous.sh my-project --budget 2h
+```
 
 ## Adding New Agents/Skills
 

@@ -57,6 +57,7 @@ Work scales from lightweight to structured based on **uncertainty** and **durati
 |------|------|-----------|--------------|--------------|
 | **Ad-hoc** | Clear task, single session, no resumption needed | None | Git commits only (in working context) | Git commit (no formal record) |
 | **Project** | Multi-session, decisions worth recording, or decomposition needed | Own repo with OBJECTIVE.md + LOG.md | Full checkpoint model + learnings | Per tier |
+| **Autonomous** | Unattended execution, async user review (explicit invocation only) | Project structure + AUTONOMOUS-LOG.md + dedicated branch | Per-checkpoint tags + structured log | Per-checkpoint |
 
 **Mode selection heuristics:**
 
@@ -87,6 +88,33 @@ Ad-hoc (working) → scope expands → create project repo with OBJECTIVE.md + L
 This is cheaper than premature structure.
 
 **Workspace repo is metadata-only.** The workspace repository holds constitutional documents (CLAUDE.md, LEARNINGS.md) and Claude configuration (.claude/). All tracked work lives in project repositories.
+
+### Autonomous Mode
+
+Autonomous mode enables unattended execution with full traceability for async review. It extends Project mode with additional structure for non-interactive operation.
+
+**Invocation:** User explicitly requests via `/autonomous <project>`. Claude never auto-selects or suggests autonomous mode.
+
+**Autonomous mode requires:**
+- Explicit user invocation
+- Existing project with OBJECTIVE.md (success criteria = termination conditions)
+- Docker isolation (full permission bypass)
+- Time budget specified at invocation
+
+**Autonomous mode provides:**
+- Dedicated branch: `auto/<project>-<YYYYMMDD-HHMM>`
+- Structured log: AUTONOMOUS-LOG.md
+- Tagged checkpoints for rollback
+- Direction mechanism for async steering
+
+**Relationship to Project mode:**
+```
+Project mode (interactive)
+  ↓ user invokes /autonomous
+Autonomous mode (unattended)
+  ↓ terminates or budget exhausted
+Project mode (review via /review-autonomous)
+```
 
 ---
 
@@ -190,12 +218,13 @@ Research shows verifiers perform superficial checks despite being prompted for t
 
 ### Checkpoint Model
 
-Two checkpoint levels for Project mode:
+Three checkpoint levels based on execution mode:
 
 | Level | When | What |
 |-------|------|------|
 | **Lightweight** | Incremental progress, no significant decisions | Git commit only |
 | **Full** | Session end, significant decisions, milestone | Git commit + LOG.md entry |
+| **Autonomous** | Decision, discovery, or reversal during unattended execution | Git tag + AUTONOMOUS-LOG.md entry |
 
 **Lightweight checkpoint:**
 - Git commit with standard message format
@@ -208,6 +237,22 @@ Two checkpoint levels for Project mode:
 - Use for: session boundaries, decisions worth recording, completed features
 
 **Heuristic:** Default to lightweight. Upgrade to full when you'd regret not having the context later.
+
+**Autonomous checkpoint:**
+- Git tag: `checkpoint-NNN` on dedicated branch
+- AUTONOMOUS-LOG.md entry with structured format
+- Triggered by Claude's judgment, not time or line count
+- Use for: decisions (chose approach A over B), discoveries (found constraint), reversals (approach failed)
+
+**Autonomous checkpoint triggers:**
+| Trigger | Example |
+|---------|---------|
+| **Decision** | Selected library, chose architecture, resolved ambiguity |
+| **Discovery** | Found unexpected behavior, identified root cause, learned constraint |
+| **Reversal** | Approach failed, rolling back, changing direction |
+| **Milestone** | Feature complete, tests passing, objective partially met |
+
+**Heuristic:** Checkpoint when a future reviewer would want to understand "why did it go this way?"
 
 ### Commit Message Format
 
@@ -237,6 +282,168 @@ When rollback needed:
 2. **Git reset** — `git reset --hard [commit]` or `git revert`
 3. **LOG.md note** — Document rollback with rationale
 4. **Re-plan** — If significant, trigger plan mode
+
+---
+
+## Autonomous Execution
+
+Autonomous mode enables Claude to make sustained progress without user interaction, maintaining full traceability for async review and course correction.
+
+### Invocation
+
+```
+/autonomous <project> [--budget <duration>]
+```
+
+- **project**: Must have OBJECTIVE.md with verifiable success criteria
+- **budget**: Time limit (default: 2h). Format: `30m`, `2h`, `4h`
+
+### Isolation
+
+Autonomous execution runs in Docker with `--dangerously-skip-permissions`:
+
+```bash
+docker run --rm --network none \
+  -v "<workspace>:/workspace" \
+  claude-autonomous -p "<prompt>" --dangerously-skip-permissions
+```
+
+**Rationale:** Full isolation replaces fine-grained permission checking. Blast radius is contained by the container, not by permission prompts.
+
+### Branch Strategy
+
+Every autonomous run creates a dedicated branch:
+
+```
+main (or current branch)
+ └── auto/<project>-<YYYYMMDD-HHMM>
+      ├── checkpoint-001 (tag)
+      ├── checkpoint-002 (tag)
+      └── checkpoint-003 (tag)
+```
+
+**Benefits:**
+- Clean separation from mainline development
+- Easy rollback to any checkpoint
+- Merge, cherry-pick, or discard entire run
+- Multiple concurrent autonomous runs don't conflict
+
+### AUTONOMOUS-LOG.md
+
+Append-only structured log for async review. Lives in project root alongside LOG.md.
+
+```markdown
+# Autonomous Execution Log
+
+## Run [YYYY-MM-DD HH:MM] — [objective summary]
+
+### Configuration
+- Branch: `auto/<project>-<timestamp>`
+- Budget: [duration]
+- Session ID: [for resumption]
+
+---
+
+### Checkpoint NNN — [HH:MM] [Decision|Discovery|Reversal|Milestone]
+
+**Context:** [what was being attempted]
+**[Choice|Finding|Problem|Achievement]:** [what happened]
+**Rationale:** [why this path]
+**Confidence:** [High|Medium|Low]
+**Files:** [modified files, or "none"]
+**Tag:** `checkpoint-NNN`
+
+---
+
+### Termination — [HH:MM]
+
+**Reason:** [Criteria met | Budget exhausted | Uncertainty threshold | Error]
+**Elapsed:** [duration]
+**Summary:** [what was accomplished]
+**Unresolved:** [what remains]
+**For Review:** [specific items needing human attention]
+```
+
+### Time Budget
+
+Budget is specified in elapsed time, not tokens or cost.
+
+**Behavior:**
+1. Agent tracks elapsed time internally
+2. At ~90% of budget, creates "budget approaching" checkpoint
+3. Writes termination summary with resumption instructions
+4. Exits gracefully
+
+**No partial work loss:** Budget exhaustion triggers checkpoint, not abrupt termination.
+
+### Termination Conditions
+
+Autonomous execution terminates when ANY of:
+
+| Condition | Action |
+|-----------|--------|
+| **Success criteria met** | Log achievement, merge candidate |
+| **Budget exhausted** | Checkpoint state, document "Next" |
+| **Uncertainty threshold** | Log uncertainty, request direction |
+| **Unrecoverable error** | Log error, preserve state for debugging |
+| **2 failed approaches** | Per Failure Protocol, stop and document |
+
+**Uncertainty threshold:** When confidence drops below acceptable level for autonomous decision-making, stop rather than guess. Document the uncertainty and what information would resolve it.
+
+### Direction Mechanism
+
+User can steer autonomous execution async via DIRECTION.md:
+
+```markdown
+# Direction for Autonomous Execution
+
+## Written: [timestamp]
+## Applies From: checkpoint-NNN
+
+### Guidance
+- [Specific direction]
+- [Constraint to enforce]
+- [Approach to try or avoid]
+
+### Priority Override
+[Any constitutional defaults to adjust for this run]
+```
+
+**Flow:**
+1. User reviews AUTONOMOUS-LOG.md
+2. User creates/updates DIRECTION.md
+3. User invokes `/autonomous <project> --resume`
+4. Agent reads DIRECTION.md before continuing
+
+### Review Protocol
+
+Invoke via `/review-autonomous <project>`:
+
+1. Parse AUTONOMOUS-LOG.md
+2. Show checkpoint summary with decision points
+3. Offer options:
+   - **Approve**: Merge branch to main
+   - **Rollback**: Reset to specific checkpoint
+   - **Direct**: Write DIRECTION.md, continue
+   - **Discard**: Delete branch entirely
+
+### Integration with Existing Systems
+
+| System | Autonomous Behavior |
+|--------|---------------------|
+| **Verification** | Per-checkpoint, not just final |
+| **Learnings** | Captured in AUTONOMOUS-LOG.md, propagated on review |
+| **Failure Protocol** | Honored — 2 failures triggers termination |
+| **Context Persistence** | Session ID enables resumption |
+| **Subagents** | Spawned normally within autonomous execution |
+
+### Constraints
+
+- **Explicit invocation only:** User must invoke `/autonomous` — Claude never auto-selects or suggests this mode
+- **OBJECTIVE.md required:** Success criteria define termination conditions
+- **Docker required:** Full permission bypass only in isolation
+- **Single project:** One autonomous run per project at a time
+- **No interactive prompts:** All decisions logged, not asked
 
 ---
 
@@ -653,8 +860,11 @@ Context state is tracked **per-project** at `<project-path>/context-state.json`.
 | **Implement** | Surgical changes | None (orchestrator commits) | `.claude/agents/implement.md` |
 | **Verify** | Confirm minimal + correct | None | `.claude/agents/verify.md` |
 | **Research** | External docs, papers, APIs | None | `.claude/agents/research.md` |
+| **Autonomous** | Unattended long-running execution | Full (within dedicated branch) | `.claude/agents/autonomous.md` |
 
 **Orchestrator authority:** Only the main/orchestrator agent commits to git and appends to LOG.md. Subagents report findings; orchestrator integrates.
+
+**Autonomous authority:** In autonomous mode, the autonomous agent has full git authority within its dedicated branch. It cannot modify main/master directly.
 
 ### Skillset Matching
 
@@ -686,6 +896,7 @@ Beyond task-agent mapping, maintain awareness of agent limitations:
 | Implement | Bounded code changes, surgical edits, following specs | Architectural decisions, unbounded scope | Scope exceeds stated boundaries |
 | Verify | Correctness checking, criteria validation, diff review | Subjective quality, domain expertise | Verification requires specialized knowledge |
 | Research | External docs, API references, papers, synthesis | Codebase-specific questions, implementation | Information found, ready to apply |
+| Autonomous | Long-running unattended work, sustained progress, parallel exploration | Interactive decisions, ambiguous requirements, subjective judgment | Uncertainty exceeds threshold, requires user input |
 
 **Anti-patterns (don't do these):**
 - Explore for implementation → will drift without boundaries

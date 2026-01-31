@@ -15,6 +15,10 @@
       "Bash(git clone:*)",
       "Bash(git submodule:*)",
       "Bash(git submodule add:*)",
+      "Bash(git tag:*)",
+      "Bash(git push -u:*)",
+      "Bash(git merge:*)",
+      "Bash(git reset:*)",
       "Bash(cargo check:*)",
       "Bash(cargo test:*)",
       "Bash(cargo build:*)",
@@ -85,7 +89,16 @@
       "Bash(wasm-objdump:*)",
       "Bash(RUSTFLAGS='-C target-feature=+simd128' cargo build:*)",
       "Bash(sort:*)",
-      "Bash(RUSTFLAGS='--cfg getrandom_backend=\"js\" -C target-feature=+simd128' wasm-pack build:*)"
+      "Bash(RUSTFLAGS='--cfg getrandom_backend=\"js\" -C target-feature=+simd128' wasm-pack build:*)",
+      "Bash(docker build:*)",
+      "Bash(docker run:*)",
+      "Bash(docker image inspect:*)",
+      "Bash(timeout:*)",
+      "Bash(.claude/docker/run-autonomous.sh:*)",
+      "Bash(mkdir -p:*)",
+      "Bash(date:*)",
+      "Bash(tail:*)",
+      "Bash(jq:*)"
     ]
   },
   "hooks": {

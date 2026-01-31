@@ -16,8 +16,9 @@ Quick reference for agents. Full specification: [CLAUDE.md](CLAUDE.md)
 |------|------|-----------|
 | **Ad-hoc** | Clear, single-session | Git commits only |
 | **Project** | Multi-session, decisions worth recording | OBJECTIVE.md + LOG.md |
+| **Autonomous** | Unattended execution (explicit invocation only) | Project + AUTONOMOUS-LOG.md + branch |
 
-Default to ad-hoc. Graduate to project when scope expands.
+Default to ad-hoc. Graduate to project when scope expands. Autonomous only on explicit `/autonomous` invocation.
 
 ## Context Invariants
 
