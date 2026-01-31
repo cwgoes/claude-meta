@@ -59,6 +59,29 @@ CLAUDE.md                    # Constitution (root authority)
 └── LEARNINGS.md             # Workspace-level learnings repository
 ```
 
+## Statusline
+
+The statusline displays current project with full objective trace + session metrics via `statusline.sh`:
+
+```
+[alpha] workspace goal → distributed systems → cache layer | Ctx: 45% | 125K/32K | $12.34
+```
+
+| Field | Meaning |
+|-------|---------|
+| `[alpha]` | Current project name |
+| `workspace → ... → current` | Full objective hierarchy trace (root → parent → current) |
+| `(30m)` | Staleness warning if >30min since state update |
+| `Ctx: N%` | Context window usage (! if >70%) |
+| `125K/32K` | Input/output tokens (session total) |
+| `$12.34` | Session cost |
+
+**Trace truncation:** If the trace exceeds 60 characters, it truncates from the left with `...` to keep the current objective visible.
+
+**Per-project context state:** Each project maintains its own `<project>/context-state.json`. The statusline shows whichever project was most recently updated (i.e., the project being worked on in that window).
+
+**Multiple windows:** Different Claude Code windows can work on different projects simultaneously. Each window's statusline reflects its own most-recently-active project.
+
 ## Hooks
 
 Constitutional enforcement via Claude Code hooks:
@@ -114,6 +137,17 @@ Key constraints enforced:
 - **Git Authority:** Only orchestrator commits (subagents have none)
 - **LOG.md Authority:** Only orchestrator appends (subagents report findings)
 - **Learning Capture:** Subagents report candidates; orchestrator propagates
+
+### Key CLAUDE.md Sections for Agents
+
+| Section | Purpose |
+|---------|---------|
+| Expertise Registry | What each agent is strong/weak at, when to escalate |
+| Domain Specialization | How to add domain overlays to base agents |
+| Delegation Contract | Required structured format for task delegation |
+| Common Ground Protocol | Acknowledgment before beginning work |
+| Verification Depth | Explicit checklists, not vague "verify" |
+| Coordination Failure | Detecting and handling multi-agent breakdowns |
 
 ## Skills
 

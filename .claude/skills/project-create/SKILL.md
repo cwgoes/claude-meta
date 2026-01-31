@@ -7,6 +7,8 @@ alignment:
   - Memory System / Projects
   - Memory System / Repository Model
   - Traceability System
+  - Context Persistence / Context Invariants
+  - Context Persistence / State Externalization
 ---
 
 # /project-create
@@ -49,6 +51,7 @@ Before creating, clarify with user:
 7. **Create initial commit** — Checkpoint the project structure
 8. **Verify** — Check structure meets constraints
 9. **Note LEARNINGS.md** — Reference workspace-level learnings repository
+10. **Write context-state.json** — Initialize context invariants for statusline
 
 **Subproject vs. New Project:**
 - **New project** → `git init` (own repo) — independent lifecycle, distinct ownership
@@ -141,6 +144,23 @@ Before creating, clarify with user:
 1. [First recommended action]
 2. [Second recommended action]
 ```
+
+## State Externalization
+
+After creating the project, write `<project-path>/context-state.json`:
+
+```json
+{
+  "timestamp": "[ISO 8601]",
+  "project": "[project path]",
+  "objective": "[1-line summary from OBJECTIVE.md]",
+  "trace": ["[project objective]"],
+  "level": "project",
+  "status": "active"
+}
+```
+
+**Per-project state:** Each project maintains its own context-state.json at the project root. Multiple projects may be active simultaneously.
 
 ## Failure Protocol
 

@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+> **Quick reference:** [CLAUDE-quick.md](CLAUDE-quick.md) (~50 lines) for agents needing fast orientation.
+
 ## Preamble
 
 This document is the **constitution** for all Claude agents and skills in this workspace.
@@ -24,6 +26,26 @@ Core principles (in priority order):
 5. **Learnings** — Capture meta-knowledge that persists and propagates
 
 **Priority means:** When principles conflict, higher-ranked wins. Traceability overhead that slows the user more than it helps is misaligned.
+
+**Conflict resolution:** When protocols conflict, apply principle priority:
+1. Would following this protocol waste user time? → Skip it
+2. Is this adding structure not needed for the task? → Skip it
+3. Otherwise → Follow the protocol
+
+### Override Protocol
+
+User can invoke streamlined operation at any time:
+
+| Override | Effect |
+|----------|--------|
+| "Skip verification" | Trivial tier regardless of scope |
+| "No logging" | Skip LOG.md entry for this work |
+| "Quick mode" | Ad-hoc behavior even within active project |
+| "Minimal ceremony" | Combine all above |
+
+Claude acknowledges the override and proceeds. No justification required from user.
+
+**Restoration:** Overrides apply to current task only. Next task resumes normal protocol unless user extends override.
 
 ---
 
@@ -124,6 +146,35 @@ Tier: Standard | Critical
 - [ ] Diff within boundaries: [yes/no]
 - [ ] No unrelated changes: [yes/no]
 ```
+
+### Verification Depth
+
+Research shows verifiers perform superficial checks despite being prompted for thoroughness. Use explicit checklists, not "verify thoroughly."
+
+**Code changes:**
+- [ ] Stated problem is solved (not adjacent problems)
+- [ ] No unrelated modifications in diff
+- [ ] Error paths handled (or explicitly noted as out-of-scope)
+- [ ] Tests exercise the change (not just pass incidentally)
+- [ ] No debug code, TODOs, or commented-out code left behind
+
+**Analysis/Research:**
+- [ ] Claims have citations or evidence
+- [ ] Assumptions surfaced explicitly
+- [ ] Confidence levels stated (high/medium/verify)
+- [ ] Gaps in knowledge acknowledged
+
+**Architectural decisions:**
+- [ ] Alternatives considered and rejected with rationale
+- [ ] Trade-offs explicit (what we're giving up)
+- [ ] Reversibility assessed
+- [ ] Impact on existing code identified
+
+**Delegation outputs:**
+- [ ] Output matches delegation contract schema
+- [ ] Success criteria addressed (each one)
+- [ ] Boundaries respected (no out-of-scope changes)
+- [ ] Escalation conditions evaluated
 
 ---
 
@@ -341,6 +392,8 @@ Root objective
 ```
 If work doesn't connect to this trace, you may be drifting.
 
+*See Context Persistence for how this trace is maintained across compression.*
+
 **Escalation triggers:**
 - Work requires crossing sibling boundaries
 - Undeclared dependency on sibling discovered
@@ -413,6 +466,7 @@ Once project selected, the protocol executes:
 5. `git status` — working tree state
 6. Build objective trace
 7. Confirm working level
+8. **Initialize context invariants** (see Context Persistence)
 
 **End** (invoke via `/session-end`):
 
@@ -450,6 +504,142 @@ Core requirements:
 - [What to do when resuming]
 ```
 
+### Context Persistence
+
+Context compression is automatic and invisible. Without explicit protocols, project awareness degrades silently during long sessions.
+
+#### Context Invariants
+
+When a project is active, these elements must be accessible at all times:
+
+| Invariant | Source | Recovery |
+|-----------|--------|----------|
+| **Project path** | Session state | Re-read from workspace structure |
+| **Current objective** | OBJECTIVE.md | Re-read file |
+| **Objective trace** | OBJECTIVE.md hierarchy | Rebuild from parent references (see Project Decomposition) |
+| **Working level** | Session state | Derive from project path |
+| **Recent decisions** | LOG.md (last 2-3 sessions) | Re-read file tail |
+
+**Invariant format** (maintain in working memory):
+```
+Project: [path relative to workspace]
+Objective: [1-line summary from OBJECTIVE.md]
+Trace: [root] → [parent] → [current]
+Level: [project | subproject]
+```
+
+#### Refresh Triggers
+
+Re-read project files when any of these occur:
+
+| Trigger | Action |
+|---------|--------|
+| **Before major decision** | Verify objective trace alignment |
+| **Before spawning subagent** | Prepare context payload |
+| **Uncertainty about scope** | Re-read OBJECTIVE.md success criteria |
+| **After extended exploration** (>10 tool calls without implementation) | Re-anchor to objective |
+| **Context feels thin** | Refresh all invariants |
+
+**Heuristic:** If you cannot state the current objective in one sentence without reading a file, refresh immediately.
+
+#### Compression Recovery
+
+When context has been compressed (detected by gaps in recall or thin context feel):
+
+1. **Acknowledge** — "Context compressed, re-anchoring to project state"
+2. **Re-read** — OBJECTIVE.md, then LOG.md (recent sessions)
+3. **Rebuild** — Objective trace from current level upward
+4. **Resume** — Continue work with restored context
+
+This is not failure — it's normal operation for long sessions.
+
+#### Delegation Contract
+
+Every subagent delegation must specify (not optional):
+
+```yaml
+delegation:
+  # Context
+  project: [path relative to workspace]
+  trace: [root] → [parent] → [current objective]
+
+  # Task specification
+  objective: [single sentence, measurable outcome]
+  output_format:
+    type: code | analysis | decision | artifact
+    schema: [if structured, define expected fields]
+
+  # Boundaries (explicit, not implicit)
+  boundaries:
+    files_writable: [explicit list, or "none"]
+    files_readable: [explicit list, or "any within project"]
+    tools_allowed: [explicit list]
+
+  # Verification
+  success_criteria:
+    - [criterion 1 - binary verifiable]
+    - [criterion 2 - binary verifiable]
+
+  # Resource constraints
+  effort_budget: small | medium | large
+
+  # Escalation
+  escalate_when:
+    - [condition that should return to orchestrator]
+    - [condition that indicates scope exceeded]
+```
+
+**Vague delegations fail.** Research shows 41.77% of multi-agent failures stem from specification problems.
+
+| Bad | Good |
+|-----|------|
+| "Investigate the bug" | "Find root cause of TypeError in auth.py:142, report failing code path" |
+| "Improve performance" | "Reduce response time of /api/users endpoint, measure before/after" |
+| "Review the code" | "Verify auth.py changes match PR #42 spec, check error handling" |
+
+Subagents operate within their boundaries and inherit the objective trace. They cannot modify parent objectives or LOG.md — only report findings for orchestrator integration.
+
+#### Common Ground Protocol
+
+Before acting on delegation, subagents must:
+
+1. **Echo understanding**: Restate the objective in own words
+2. **Surface assumptions**: List what you're assuming that wasn't stated
+3. **Flag ambiguity**: Note terms or requirements open to interpretation
+4. **Confirm scope**: Explicit acknowledgment of boundaries
+
+Orchestrator reviews acknowledgment before subagent proceeds with significant work.
+
+**Rationale:** Research shows "silent misunderstandings" propagate through downstream work undetected. Explicit acknowledgment catches divergence early. This adds one round-trip but prevents wasted work from misaligned execution.
+
+#### State Externalization
+
+Context state is tracked **per-project** at `<project-path>/context-state.json`. This supports multiple Claude Code windows in a workspace (each window works on its own project).
+
+**Per-project state file:** `<project-path>/context-state.json`
+
+```json
+{
+  "timestamp": "2024-01-15T14:30:00Z",
+  "project": "projects/alpha",
+  "objective": "Build distributed cache with <10ms p99 latency",
+  "trace": ["workspace goal", "alpha: distributed systems", "current: cache layer"],
+  "level": "project | subproject",
+  "status": "active | paused | completed"
+}
+```
+
+**Write triggers:**
+- `/project-start` — initialize or update project's context-state.json
+- After any refresh trigger — update that project's context-state.json
+- `/session-end` — update status to "paused" or "completed"
+
+**Statusline resolution:** The statusline displays the project whose context-state.json was most recently updated. This reflects the project currently being worked on in that Claude Code window.
+
+**Self-check:** If Claude cannot populate these fields from working memory without reading files, that indicates context loss. Trigger Compression Recovery *before* writing state.
+
+**Verification model:** The statusline shows the current project's objective trace and session metrics. If the user observes discrepancy between the statusline and Claude's actual behavior, the context invariant has failed. User can prompt: "Refresh your context state."
+
 ---
 
 ## Cognitive Architecture
@@ -458,18 +648,92 @@ Core requirements:
 
 | Mode | Purpose | Git Authority | Subagent |
 |------|---------|---------------|----------|
-| **Explore** | Gather context | None | `.claude/agents/explore.md` |
+| **Explore** | Gather codebase context | None | `.claude/agents/explore.md` |
 | **Plan** | Evaluate approaches | None | `.claude/agents/plan.md` |
 | **Implement** | Surgical changes | None (orchestrator commits) | `.claude/agents/implement.md` |
 | **Verify** | Confirm minimal + correct | None | `.claude/agents/verify.md` |
+| **Research** | External docs, papers, APIs | None | `.claude/agents/research.md` |
 
 **Orchestrator authority:** Only the main/orchestrator agent commits to git and appends to LOG.md. Subagents report findings; orchestrator integrates.
+
+### Skillset Matching
+
+Match task characteristics to agent capabilities:
+
+| Task Type | Primary Agent | When to Delegate |
+|-----------|---------------|------------------|
+| Codebase understanding | Explore | Unknown structure, need orientation |
+| External information | Research | Docs, APIs, papers, specifications |
+| Approach selection | Plan | Multiple valid paths, trade-offs unclear |
+| Bounded code changes | Implement | Clear spec, defined file boundaries |
+| Correctness checking | Verify | After implementation, before commit |
+
+**Delegation heuristics:**
+- **Parallelize** when tasks are independent and boundaries clear
+- **Serialize** when output of one informs another
+- **Escalate** when task exceeds agent's declared scope
+
+**Skill selection:** When user request maps to a known skill (e.g., `/commit`, `/project-start`), invoke that skill rather than reimplementing its logic.
+
+### Expertise Registry
+
+Beyond task-agent mapping, maintain awareness of agent limitations:
+
+| Agent | Strong At | Weak At | Escalate When |
+|-------|-----------|---------|---------------|
+| Explore | Codebase orientation, pattern finding | Implementation decisions, code changes | Need to modify code |
+| Plan | Trade-off analysis, approach selection, decomposition | Execution details, actual implementation | Plan validated, ready to implement |
+| Implement | Bounded code changes, surgical edits, following specs | Architectural decisions, unbounded scope | Scope exceeds stated boundaries |
+| Verify | Correctness checking, criteria validation, diff review | Subjective quality, domain expertise | Verification requires specialized knowledge |
+| Research | External docs, API references, papers, synthesis | Codebase-specific questions, implementation | Information found, ready to apply |
+
+**Anti-patterns (don't do these):**
+- Explore for implementation → will drift without boundaries
+- Implement for unbounded scope → will over-engineer
+- Plan after implementation started → sunk cost bias
+- Verify without explicit criteria → superficial checks
+
+### Domain Specialization
+
+Base agent types provide stable interaction protocols. Domain overlays provide specialized expertise.
+
+**When to specialize:**
+- Problem requires domain knowledge not in base agent
+- Domain has known pitfalls worth pre-loading
+- Multiple agents need consistent domain understanding
+
+**When NOT to specialize:**
+- Generic programming tasks
+- Problem well-specified without domain context
+- Quick tasks where specification overhead exceeds benefit
+
+**Specialization format:**
+
+```yaml
+agent:
+  base: Implement  # Stable archetype
+  domain:
+    name: "Rust async programming"
+    context: |
+      Working with tokio runtime, async/await patterns.
+      Common issues: deadlocks from blocking in async context.
+    patterns:
+      - "Check for blocking calls in async functions"
+      - "Verify spawn vs spawn_blocking usage"
+    pitfalls:
+      - "Don't hold locks across .await points"
+    relevant_learnings:
+      - [Reference from LEARNINGS.md if applicable]
+```
+
+Domain overlays augment, not replace, the base agent's protocols. Verification, failure handling, and git authority remain unchanged.
 
 ### Parallelization
 
 **IMPORTANT:** When tasks are independent, use parallel subagents liberally. Compute is not a constraint.
 
 - Spawn parallel subagents for exploration, research, implementation, verification
+- **Pass context payload** to every subagent (see Context Persistence)
 - Define explicit file boundaries before parallel implementation
 - Aggregate and integrate results before proceeding
 - If boundaries unclear: use feature branches
@@ -505,6 +769,28 @@ When stuck or failing:
 5. **Decide** — Change approach, decompose, or escalate
 
 **NEVER** retry the same approach indefinitely.
+
+### Coordination Failure
+
+Distinct from implementation failure. Research shows coordination problems cause 36.94% of multi-agent breakdowns.
+
+**Detect when:**
+- Subagent output doesn't match delegation contract
+- Multiple agents modified overlapping files
+- Subagent asks questions already answered in context payload
+- Results from parallel agents contradict each other
+- Aggregated results don't compose into coherent whole
+- Subagent exceeded stated boundaries
+
+**Response:**
+1. **Stop** parallel work immediately
+2. **Discard** conflicting outputs (don't attempt to merge)
+3. **Diagnose** — specification problem or execution problem?
+4. **If specification problem:** Improve delegation contract, re-delegate with explicit boundaries
+5. **If execution problem:** Serialize work (don't re-parallelize same task)
+6. **Capture learning** — What made the coordination fail?
+
+**Key insight:** Adding more agents to broken coordination makes it worse, not better (Brooks' Law: coordination cost scales O(n²)). When coordination fails, reduce parallelism, don't increase it.
 
 ### Termination Criteria
 

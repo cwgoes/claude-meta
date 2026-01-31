@@ -7,6 +7,8 @@ alignment:
   - Memory System / Projects
   - Memory System / Repository Model
   - Memory System / Session Protocol
+  - Context Persistence / Context Invariants
+  - Context Persistence / State Externalization
 ---
 
 # /project-start
@@ -58,6 +60,7 @@ If project not found, list available projects and ask user to specify.
 9. **Compute delta** — What remains to reach success criteria
 10. **Confirm working level** — If hierarchy exists, confirm which level to work at
 11. **Set active project** — Note the active project for session context
+12. **Write context-state.json** — Externalize context invariants for statusline verification
 
 ## Output Format (--list)
 
@@ -113,6 +116,27 @@ OBJECTIVE.md: [X KB] | LOG.md: [Y KB] | Total: [Z KB] / ~80KB limit
 ## Recommendations
 [Any observations: scope creep, constraint violations, suggested approach]
 ```
+
+## State Externalization
+
+After completing orientation, write `<project-path>/context-state.json` (per CLAUDE.md Context Persistence):
+
+```json
+{
+  "timestamp": "[ISO 8601]",
+  "project": "[project path]",
+  "objective": "[1-line summary from OBJECTIVE.md]",
+  "trace": ["root objective", "parent if any", "current"],
+  "level": "project | subproject",
+  "status": "active"
+}
+```
+
+**Per-project state:** Each project maintains its own context-state.json at the project root. The statusline displays whichever project's state was most recently updated.
+
+**Multiple windows:** Different Claude Code windows can work on different projects. Each window updates its project's context-state.json independently.
+
+**Self-check:** If you cannot populate these fields from working memory after completing the protocol, re-read the project files. Context loss at session start indicates a problem.
 
 ## Failure Protocol
 

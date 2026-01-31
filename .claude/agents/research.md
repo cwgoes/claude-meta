@@ -6,6 +6,8 @@ model: sonnet
 constitution: CLAUDE.md
 alignment:
   - Cognitive Architecture / Execution Modes
+  - Cognitive Architecture / Expertise Registry
+  - Context Persistence / Common Ground Protocol
   - Failure Protocol
 ---
 

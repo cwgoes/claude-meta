@@ -8,6 +8,7 @@ alignment:
   - Memory System / Repository Model
   - Traceability System
   - Memory System / Learnings
+  - Context Persistence / State Externalization
 ---
 
 # Session End Protocol
@@ -217,6 +218,20 @@ If work was done but not verified:
 - Full mode warns about unverified state
 - Does not create commit
 - Notes verification gap in LOG.md
+
+### With State Externalization
+
+Update each active project's `<project-path>/context-state.json` on session end:
+
+**Full mode:**
+- Update status to "paused" if work incomplete
+- Update status to "completed" if criteria met
+- Timestamp reflects session end time
+
+**Quick mode:**
+- Update status to "paused" for any active projects
+
+**Multi-project sessions:** If multiple projects were active, update each project's context-state.json appropriately based on work done in that project.
 
 ---
 

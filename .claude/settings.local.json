@@ -67,7 +67,25 @@
       "Bash(./build.sh:*)",
       "Bash(./build-web.sh:*)",
       "Bash(git check-ignore:*)",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(git rm:*)",
+      "Bash(for p in projects/*/)",
+      "Bash(if [ -f \"$pOBJECTIVE.md\" ])",
+      "Bash(then head -20 \"$pOBJECTIVE.md\")",
+      "Bash(else echo \"\\(no OBJECTIVE.md\\)\")",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(timeout 120 npx playwright test:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(lsof:*)",
+      "Bash(cat:*)",
+      "Bash(RUSTFLAGS='-C target-feature=+simd128' cargo check:*)",
+      "Bash(RUSTFLAGS='-C target-feature=+simd128' wasm-pack build:*)",
+      "Bash(wasm2wat:*)",
+      "Bash(wasm-objdump:*)",
+      "Bash(RUSTFLAGS='-C target-feature=+simd128' cargo build:*)",
+      "Bash(sort:*)",
+      "Bash(RUSTFLAGS='--cfg getrandom_backend=\"js\" -C target-feature=+simd128' wasm-pack build:*)"
     ]
   },
   "hooks": {
@@ -92,5 +110,9 @@
         ]
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "$CLAUDE_PROJECT_DIR/.claude/statusline.sh"
   }
 }

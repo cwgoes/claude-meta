@@ -6,9 +6,11 @@ alignment:
   - Work Modes
   - Memory System / Projects
   - Memory System / Repository Model
-  - Verification System
+  - Verification System / Verification Depth
   - Traceability System
   - Memory System / Learnings
+  - Context Persistence / Context Invariants
+  - Context Persistence / State Externalization
 ---
 
 # /project-check
@@ -56,6 +58,8 @@ Use when:
 | **Git State** | Working tree clean or changes accounted for |
 | **Traceability** | Checkpoint model followed |
 | **Learnings** | Propagation-worthy learnings captured |
+| **Context State** | `<project>/context-state.json` exists and is current |
+| **State Accuracy** | Context state matches OBJECTIVE.md content |
 
 ## Protocol
 
@@ -110,6 +114,14 @@ Use when:
 - Objective focus: [what OBJECTIVE.md says]
 - Actual work: [what LOG.md shows]
 - Alignment: [aligned | minor drift | significant drift]
+
+## Context State Audit
+- context-state.json exists: [yes/no]
+- Timestamp: [age since last update]
+- Project matches: [yes/no]
+- Objective matches OBJECTIVE.md: [yes/no]
+- Status accurate: [yes/no]
+- Recommendation: [none | update state | refresh context]
 
 ## Issues
 1. [Issue] — [severity: low/medium/high] — [remediation]
