@@ -38,20 +38,20 @@ Before creating, clarify with user:
 1. **Objective** — What are we building?
 2. **Success criteria** — How do we know it's done?
 3. **Scope** — What's in/out of scope?
-4. **Location** — Where should the project live? (default: `projects/<name>/`)
+
+**Location:** Projects are always created in `projects/<name>/` (never workspace root).
 
 ## Protocol
 
 1. **Gather requirements** — Use AskUserQuestion if unclear
 2. **Plan structure** — Determine if hierarchy needed, estimate size
-3. **Create directory** — At `projects/<name>/` (default) or specified location
+3. **Create directory** — At `projects/<name>/` (always in projects/ subdirectory)
 4. **Initialize git** — ALWAYS (one project = one repository per Repository Model)
-5. **Write OBJECTIVE.md** — With success criteria and boundaries
+5. **Write OBJECTIVE.md** — With success criteria and boundaries (triggers automatic state capture via hook)
 6. **Write LOG.md** — With initial session entry
 7. **Create initial commit** — Checkpoint the project structure
 8. **Verify** — Check structure meets constraints
 9. **Note LEARNINGS.md** — Reference workspace-level learnings repository
-10. **Write context-state.json** — Initialize context invariants for statusline
 
 **Subproject vs. New Project:**
 - **New project** → `git init` (own repo) — independent lifecycle, distinct ownership
@@ -145,22 +145,16 @@ Before creating, clarify with user:
 2. [Second recommended action]
 ```
 
-## State Externalization
+## State Externalization (Automatic)
 
-After creating the project, write `<project-path>/context-state.json`:
+Context state is managed automatically by hooks — no manual file management needed.
 
-```json
-{
-  "timestamp": "[ISO 8601]",
-  "project": "[project path]",
-  "objective": "[1-line summary from OBJECTIVE.md]",
-  "trace": ["[project objective]"],
-  "level": "project",
-  "status": "active"
-}
-```
+**How it works:**
+- When OBJECTIVE.md is read (step 5), the `PostToolUse` hook automatically captures project context
+- State is stored at `.claude/sessions/<session_id>/context-state.json`
+- Each Claude Code window has its own session ID, enabling parallel work without conflicts
 
-**Per-project state:** Each project maintains its own context-state.json at the project root. Multiple projects may be active simultaneously.
+**Session isolation:** Multiple Claude Code windows can work on different projects simultaneously. Each session's state is keyed by its unique session ID.
 
 ## Failure Protocol
 

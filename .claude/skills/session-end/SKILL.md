@@ -179,18 +179,11 @@ For multi-session projects or significant work worth preserving.
      ```
    - Update Propagation Log table
 
-5. **Update context-state.json**
-   - Read current `<project-path>/context-state.json`
-   - Update:
-     - `timestamp`: current time
-     - `status`: "completed" if success criteria met, else "paused"
-   - Write updated file
-
-6. **Commit decision**
+5. **Commit decision**
    - If verified and complete → offer to commit with proper message format
    - If unverified or incomplete → do not commit, note in LOG.md
 
-7. **Output session summary**
+6. **Output session summary**
 
 **Output:**
 ```
@@ -306,30 +299,17 @@ If work was done but not verified:
 
 ### With State Externalization
 
-Update each active project's `<project-path>/context-state.json` on session end:
+Context state is managed automatically by hooks — no manual file management needed.
 
-**Full mode:**
-1. Read current context-state.json
-2. Update fields:
-   ```json
-   {
-     "timestamp": "[ISO 8601 now]",
-     "status": "completed" | "paused"
-   }
-   ```
-   - Use "completed" if all success criteria in OBJECTIVE.md are met
-   - Use "paused" otherwise
-3. Write updated file
+**How it works:**
+- State is stored at `.claude/sessions/<session_id>/context-state.json`
+- The `PostToolUse` hook captures state when OBJECTIVE.md is read
+- The `PreCompact` hook saves state before context compression
+- The `SessionStart` hook restores context after compression
 
-**Quick mode:**
-1. If context-state.json exists, update:
-   - `timestamp`: current time
-   - `status`: "paused"
-2. If missing, skip (quick mode doesn't create state)
+**Session isolation:** Each Claude Code window has a unique session ID. Multiple windows can work on different projects without state conflicts.
 
-**Multi-project sessions:** If multiple projects were active, update each project's context-state.json appropriately based on work done in that project.
-
-**Verification:** After writing, the statusline should reflect the updated status on next refresh.
+**Statusline:** Automatically reflects the current session's project state.
 
 ---
 

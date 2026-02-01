@@ -93,9 +93,9 @@ The statusline displays current project with full objective trace + session metr
 
 **Trace truncation:** If the trace exceeds 60 characters, it truncates from the left with `...` to keep the current objective visible.
 
-**Per-project context state:** Each project maintains its own `<project>/context-state.json`. The statusline shows whichever project was most recently updated (i.e., the project being worked on in that window).
+**Session-keyed context state:** Context state is stored at `.claude/sessions/<session_id>/context-state.json`. Each Claude Code window has a unique session ID, ensuring parallel windows don't conflict.
 
-**Multiple windows:** Different Claude Code windows can work on different projects simultaneously. Each window's statusline reflects its own most-recently-active project.
+**Multiple windows:** Different Claude Code windows can work on different projects simultaneously. Each window's statusline reflects its own session's active project.
 
 ## Hooks
 
@@ -104,6 +104,9 @@ Constitutional enforcement via Claude Code hooks:
 | Hook | Event | Purpose |
 |------|-------|---------|
 | `session-start.sh` | SessionStart | Outputs workspace context (learnings, projects) |
+| `post-compact-reload.sh` | SessionStart (compact) | Restores context after compression |
+| `pre-compact-save.sh` | PreCompact | Saves context before compression |
+| `capture-project-context.sh` | PostToolUse (Read) | Captures project state when OBJECTIVE.md is read |
 | `pre-commit.sh` | PreToolUse (Bash) | Reminds about commit message format requirements |
 
 ### Session Start Behavior

@@ -933,7 +933,7 @@ Session start requires explicit project selection. The SessionStart hook provide
 ```
 
 Once project selected, the protocol executes:
-1. Resolve project path (`projects/<name>/` or `<name>/`)
+1. Resolve project path (`projects/<name>/` — all projects live in projects/ subdirectory)
 2. Read OBJECTIVE.md — success criteria
 3. Read LOG.md — decision history
 4. Read LEARNINGS.md — all applicable levels (workspace + project + subproject if exists)
@@ -1036,15 +1036,15 @@ This is not failure — it's normal operation for long sessions.
 
 #### Hierarchy Navigation
 
-When working level within a project changes, update context-state.json immediately.
+When working level within a project changes, read the new level's OBJECTIVE.md to trigger automatic state update.
 
 **Navigation events:**
 
 | Event | Action |
 |-------|--------|
-| **Enter subproject** | Update trace, level → "subproject", objective → subproject's |
-| **Return to parent** | Update trace, level → "project", objective → parent's |
-| **Move to sibling** | Update trace (same depth), objective → sibling's |
+| **Enter subproject** | Read subproject's OBJECTIVE.md → hook captures new context |
+| **Return to parent** | Read parent's OBJECTIVE.md → hook captures new context |
+| **Move to sibling** | Read sibling's OBJECTIVE.md → hook captures new context |
 
 **Detection:**
 - **Explicit:** User directs "work on subproject X" or "return to parent"
@@ -1052,21 +1052,11 @@ When working level within a project changes, update context-state.json immediate
 - **Delegation:** Spawning agent for subproject work
 
 **On navigation:**
-1. Read target level's OBJECTIVE.md
-2. Rebuild trace from root to new current level
-3. Update context-state.json:
-   ```json
-   {
-     "timestamp": "<ISO 8601 now>",
-     "objective": "<new level's objective>",
-     "trace": ["<root>", "<parent if any>", "<current>"],
-     "level": "project | subproject",
-     "status": "active"
-   }
-   ```
-4. Statusline reflects new position immediately
+1. Read target level's OBJECTIVE.md (triggers automatic state capture via `PostToolUse` hook)
+2. The hook extracts objective, builds trace, and writes session state
+3. Statusline reflects new position immediately
 
-**Heuristic:** If the files you're reading/writing are under a subproject's directory, you may have implicitly navigated. Verify and update context state.
+**Heuristic:** If the files you're reading/writing are under a subproject's directory, you may have implicitly navigated. Read that level's OBJECTIVE.md to update context state.
 
 #### Delegation Contract
 
@@ -1129,31 +1119,47 @@ Orchestrator reviews acknowledgment before subagent proceeds with significant wo
 
 #### State Externalization
 
-Context state is tracked **per-project** at `<project-path>/context-state.json`. This supports multiple Claude Code windows in a workspace (each window works on its own project).
+Context state is tracked **per-session** at `.claude/sessions/<session_id>/context-state.json`. This supports multiple Claude Code windows working in parallel on the same or different projects without state conflicts.
 
-**Per-project state file:** `<project-path>/context-state.json`
+**Session-keyed state file:** `.claude/sessions/<session_id>/context-state.json`
 
 ```json
 {
+  "session_id": "abc123-def456",
   "timestamp": "2024-01-15T14:30:00Z",
   "project": "projects/alpha",
+  "project_name": "alpha",
   "objective": "Build distributed cache with <10ms p99 latency",
   "trace": ["workspace goal", "alpha: distributed systems", "current: cache layer"],
   "level": "project | subproject",
-  "status": "active | paused | completed"
+  "status": "active | paused | completed",
+  "last_pre_compact": "2024-01-15T14:25:00Z",
+  "last_context_reload": "2024-01-15T14:26:00Z"
 }
 ```
 
-**Write triggers:**
-- `/project-start` — initialize or update project's context-state.json
-- After any refresh trigger — update that project's context-state.json
-- `/session-end` — update status to "paused" or "completed"
+**Session isolation:** Each Claude Code window has a unique `session_id` (provided by Claude Code in hook inputs). State is keyed by this ID, ensuring:
+- Two windows on the same project don't overwrite each other's state
+- Two windows on different projects don't see each other's context
+- Context reload after compression restores the correct project for that session
 
-**Statusline resolution:** The statusline displays the project whose context-state.json was most recently updated. This reflects the project currently being worked on in that Claude Code window.
+**Automatic state management via hooks:**
+| Hook | Trigger | Action |
+|------|---------|--------|
+| `PostToolUse` (Read) | OBJECTIVE.md read | Captures project context to session state |
+| `PreCompact` | Before compression | Saves compression timestamp to session state |
+| `SessionStart` (compact) | After compression | Outputs full context digest from session state |
+
+**Write triggers:**
+- Reading OBJECTIVE.md (via `/project-start` or directly) — creates/updates session state
+- Before context compression — updates `last_pre_compact` timestamp
+- After context reload — updates `last_context_reload` timestamp
+
+**Statusline resolution:** The statusline reads session-specific state from `.claude/sessions/<session_id>/context-state.json`. If no session state exists (project not yet started in this session), displays "No active project" — use `/project-start <name>` to begin.
 
 **Self-check:** If Claude cannot populate these fields from working memory without reading files, that indicates context loss. Trigger Compression Recovery *before* writing state.
 
-**Verification model:** The statusline shows the current project's objective trace and session metrics. If the user observes discrepancy between the statusline and Claude's actual behavior, the context invariant has failed. User can prompt: "Refresh your context state."
+**Verification model:** The statusline shows the current session's project objective trace and metrics. If the user observes discrepancy between the statusline and Claude's actual behavior, the context invariant has failed. User can prompt: "Refresh your context state."
 
 ---
 

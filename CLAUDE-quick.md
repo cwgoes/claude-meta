@@ -20,18 +20,20 @@ Quick reference for agents. Full specification: [CLAUDE.md](CLAUDE.md)
 
 Default to ad-hoc. Graduate to project when scope expands. Autonomous only on explicit `/autonomous` invocation.
 
-## Context State
+## Context State (Automatic)
 
-**File:** `<project>/context-state.json` — written by skills, read by statusline.
+**File:** `.claude/sessions/<session_id>/context-state.json` — managed by hooks, read by statusline.
 
-**Write triggers:**
-| Event | Action |
-|-------|--------|
-| `/project-start` | Read if exists, create if missing, set status "active" |
-| Hierarchy navigation | Update trace, level, objective |
-| `/session-end` | Update status to "paused" or "completed" |
+**Automatic triggers:**
+| Event | Hook | Action |
+|-------|------|--------|
+| Read OBJECTIVE.md | PostToolUse | Captures project context |
+| Before compression | PreCompact | Saves state |
+| After compression | SessionStart | Restores full context digest |
 
-**Can't state project/objective/trace? Refresh immediately.**
+**Session isolation:** Each Claude Code window has unique session ID — parallel work without conflicts.
+
+**Can't state project/objective/trace? Read OBJECTIVE.md to re-trigger capture.**
 
 ## Verification Tiers
 

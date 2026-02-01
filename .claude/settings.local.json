@@ -1,9 +1,12 @@
 {
+  "env": {
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "64000",
+    "MAX_THINKING_TOKENS": "31999"
+  },
   "permissions": {
     "allow": [
       "WebFetch:*",
       "WebSearch",
-
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
@@ -23,7 +26,6 @@
       "Bash(git reset:*)",
       "Bash(git submodule:*)",
       "Bash(git submodule add:*)",
-
       "Bash(cargo check:*)",
       "Bash(cargo test:*)",
       "Bash(cargo build:*)",
@@ -38,18 +40,15 @@
       "Bash(RUSTFLAGS='-C target-feature=+simd128' cargo check:*)",
       "Bash(RUSTFLAGS='-C target-feature=+simd128' cargo build:*)",
       "Bash(RUSTFLAGS='--cfg getrandom_backend=\"js\" -C target-feature=+simd128' wasm-pack build:*)",
-
       "Bash(forge init:*)",
       "Bash(forge build:*)",
       "Bash(forge test:*)",
       "Bash(forge script:*)",
-
       "Bash(wasm-pack:*)",
       "Bash(wasm-pack build:*)",
       "Bash(RUSTFLAGS='-C target-feature=+simd128' wasm-pack build:*)",
       "Bash(wasm2wat:*)",
       "Bash(wasm-objdump:*)",
-
       "Bash(rustc:*)",
       "Bash(rustup target list:*)",
       "Bash(rustup target add:*)",
@@ -58,13 +57,11 @@
       "Bash(rustup run nightly cargo objdump:*)",
       "Bash(rustup run nightly rustc:*)",
       "Bash(rustup run nightly wasm-pack build:*)",
-
       "Bash(docker build:*)",
       "Bash(docker run:*)",
       "Bash(docker image inspect:*)",
       "Bash(timeout:*)",
       "Bash(.claude/docker/run-autonomous.sh:*)",
-
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
@@ -78,20 +75,15 @@
       "Bash(sort:*)",
       "Bash(jq:*)",
       "Bash(lsof:*)",
-
       "Bash(mkdir -p:*)",
       "Bash(chmod:*)",
       "Bash(date:*)",
-
       "Bash(curl:*)",
-
       "Bash(make:*)",
       "Bash(node:*)",
       "Bash(npx playwright test:*)",
       "Bash(timeout 120 npx playwright test:*)",
-
       "Bash(brew:*)",
-
       "Bash(objdump:*)",
       "Bash(llvm-objdump:*)",
       "Bash(riscv64-unknown-elf-objdump:*)",
@@ -104,7 +96,25 @@
       "Bash(./scripts/patch-sp1.sh:*)",
       "Bash(./build.sh:*)",
       "Bash(./build-web.sh:*)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(# Check if server is still running with proper headers curl -s -I http://localhost:8080)",
+      "Bash(tee:*)",
+      "Bash(npm install)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:e2e:*)",
+      "Bash(PORT=8085 npx playwright test:*)",
+      "Bash(npm run build:*)",
+      "Bash(~/.cargo/bin/wasm-bindgen:*)",
+      "Bash(npm run test:*)",
+      "Bash(git push:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo search:*)",
+      "Bash(cargo info:*)",
+      "Bash(cargo bench:*)",
+      "Bash(npx playwright install:*)",
+      "Bash(./run-benchmark.sh:*)"
     ]
   },
   "hooks": {
@@ -114,6 +124,35 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-compact-reload.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-compact-save.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/capture-project-context.sh"
           }
         ]
       }
@@ -134,9 +173,5 @@
     "type": "command",
     "command": "$CLAUDE_PROJECT_DIR/.claude/statusline.sh"
   },
-  "alwaysThinkingEnabled": true,
-  "env": {
-    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "64000",
-    "MAX_THINKING_TOKENS": "31999"
-  }
+  "alwaysThinkingEnabled": true
 }

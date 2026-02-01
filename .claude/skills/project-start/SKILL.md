@@ -40,30 +40,28 @@ Per CLAUDE.md Work Modes, determine current mode based on structure:
 
 ## Project Resolution
 
-Projects are located by searching:
-1. `projects/<name>/OBJECTIVE.md`
-2. `<name>/OBJECTIVE.md`
-3. Direct path if contains `/`
+Projects are always in the `projects/` subdirectory (never workspace root).
+
+Resolution:
+1. `projects/<name>/OBJECTIVE.md` — standard location
+2. `projects/<path>/OBJECTIVE.md` — if name contains `/` (subpath within projects/)
 
 If project not found, list available projects and ask user to specify.
 
 ## Protocol
 
 1. **Resolve project** — Find OBJECTIVE.md using resolution rules above
-2. **Read OBJECTIVE.md** — Understand what we're building and success criteria
+2. **Read OBJECTIVE.md** — Understand what we're building and success criteria (triggers automatic state capture via hook)
 3. **Read LOG.md** — Understand prior work and decisions
 4. **Read LEARNINGS.md** — Check for applicable learnings (workspace-level)
-5. **Read context-state.json** — If exists, display prior session info (see Context State below)
-6. **Read analysis/INDEX.md** — If exists, note active analyses and topics for discovery
-7. **Run `git status` from project directory** — Each project is its own git repo per Repository Model
-8. **Check submodules** — If project uses submodules, note their status
-9. **Build objective trace** — Map current level to root
-10. **Assess state** — Determine what's complete, in-progress, blocked
-11. **Compute delta** — What remains to reach success criteria
-12. **Confirm working level** — If hierarchy exists, confirm which level to work at
-13. **Set active project** — Note the active project for session context
-14. **Write context-state.json** — Create or update with status "active" (see Context State below)
-15. **Cross-session pattern detection** — Scan LOG.md for recurring patterns (see below)
+5. **Read analysis/INDEX.md** — If exists, note active analyses and topics for discovery
+6. **Run `git status` from project directory** — Each project is its own git repo per Repository Model
+7. **Check submodules** — If project uses submodules, note their status
+8. **Build objective trace** — Map current level to root
+9. **Assess state** — Determine what's complete, in-progress, blocked
+10. **Compute delta** — What remains to reach success criteria
+11. **Confirm working level** — If hierarchy exists, confirm which level to work at
+12. **Cross-session pattern detection** — Scan LOG.md for recurring patterns (see below)
 
 ## Cross-Session Pattern Detection
 
@@ -163,51 +161,24 @@ OBJECTIVE.md: [X KB] | LOG.md: [Y KB] | Total: [Z KB] / ~80KB limit
 [Any observations: scope creep, constraint violations, suggested approach]
 ```
 
-## Context State
+## Context State (Automatic)
 
-Manages `<project-path>/context-state.json` for statusline display and session continuity.
+Context state is managed automatically by hooks — no manual file management needed.
 
-### On Project Start
+**How it works:**
+- When you read OBJECTIVE.md (step 2), the `PostToolUse` hook automatically captures project context
+- State is stored at `.claude/sessions/<session_id>/context-state.json`
+- Each Claude Code window has its own session ID, enabling parallel work without conflicts
+- The statusline reads this state to display the current project
 
-1. **Check for existing file:**
-   ```bash
-   cat <project-path>/context-state.json 2>/dev/null
-   ```
+**Session isolation:** Multiple Claude Code windows can work on different projects simultaneously. Each session's state is keyed by its unique session ID.
 
-2. **If exists — read and display:**
-   ```
-   Prior Session: [timestamp from file]
-   Status: [status from file]
-   Last Objective: [objective from file]
-   ```
-   Then update timestamp and status to "active".
+**On context compression:**
+- `PreCompact` hook saves state before compression
+- `SessionStart` hook (after compact) outputs full context digest automatically
+- No manual intervention needed — context is restored transparently
 
-3. **If missing — create:**
-   - Extract objective summary: first heading or sentence from OBJECTIVE.md
-   - Build trace from objective hierarchy
-   - Set status to "active"
-
-4. **Write context-state.json:**
-   ```json
-   {
-     "timestamp": "[ISO 8601 now]",
-     "project": "[project path]",
-     "objective": "[1-line summary from OBJECTIVE.md]",
-     "trace": ["root objective", "parent if any", "current"],
-     "level": "project | subproject",
-     "status": "active"
-   }
-   ```
-
-### File Location
-
-`<project-path>/context-state.json` — at project root alongside OBJECTIVE.md and LOG.md.
-
-**Per-project state:** Each project maintains its own context-state.json. The statusline displays whichever project's state was most recently updated.
-
-**Multiple windows:** Different Claude Code windows can work on different projects. Each window updates its project's context-state.json independently.
-
-**Self-check:** If you cannot populate these fields from working memory after completing the protocol, re-read the project files. Context loss at session start indicates a problem.
+**Self-check:** If you cannot state the current objective after completing the protocol, re-read OBJECTIVE.md. This re-triggers state capture via the hook.
 
 ## Failure Protocol
 
