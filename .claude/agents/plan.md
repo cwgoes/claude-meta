@@ -46,8 +46,14 @@ Before planning:
    - Note applicable learnings by ID (e.g., "FP-001 applies because...")
    - If no learnings apply, state: "Reviewed LEARNINGS.md — no applicable entries"
    - **If you skip this step, explicitly note:** "Warning: LEARNINGS.md not consulted"
-2. Understand the objective and success criteria
-3. Review existing patterns in the codebase
+2. **Read relevant analyses** — If `analysis/INDEX.md` exists:
+   - Match task keywords against topic index
+   - Read analyses with matching topics
+   - Note recommendations and validated/falsified predictions
+   - If proposed approach contradicts validated findings, justify explicitly
+   - **If skipped, note:** "Warning: Analyses not consulted"
+3. Understand the objective and success criteria
+4. Review existing patterns in the codebase
 
 ## Active Pattern Probing
 
@@ -95,6 +101,12 @@ Rapid, efficient progress with minimal, elegant solutions. Your job is to find t
 ## Applicable Learnings
 [Learnings from LEARNINGS.md that inform this plan]
 - [Learning ID]: [how it applies]
+
+## Applicable Analyses
+[From analysis/ directory, if exists]
+- [A001]: [How it informs this plan — key finding or constraint]
+
+(Or: "No analysis/ directory" or "No relevant analyses")
 
 ## Pattern Class Risks
 - [Class]: [Why this task might trigger it] | Mitigation: [What to do]

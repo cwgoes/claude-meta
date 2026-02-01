@@ -76,6 +76,11 @@ Research shows verifiers perform superficial checks despite prompts. Use these e
 - [ ] Verification record complete for tier
 - [ ] Learning candidates captured if applicable
 
+### Prediction Validation (if analysis/ exists)
+- [ ] Check if implementation tests any pending predictions from relevant analyses
+- [ ] If prediction tested, note outcome (validated/falsified)
+- [ ] If falsified, flag for learning capture in analysis Validation Log
+
 ## Behavior
 
 1. Read the requirements/objective

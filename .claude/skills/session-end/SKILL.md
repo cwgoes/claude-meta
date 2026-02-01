@@ -144,6 +144,12 @@ For multi-session projects or significant work worth preserving.
    - **Evidence:** [file:line, measurement, observation]
    - **Propagate:** Yes/No
 
+   ### Analyses
+   [If any created, updated, or validated]
+   - Created: A### — [title]
+   - Updated: A### — [what changed]
+   - Validated: A###.P# — [outcome]
+
    ### State
    - Git: [clean | uncommitted changes in X files]
    - Verification: [status]

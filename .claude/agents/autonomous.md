@@ -42,10 +42,11 @@ direction: <from DIRECTION.md if exists>
 1. **Read OBJECTIVE.md** — Extract success criteria (these are termination conditions)
 2. **Read DIRECTION.md** — If exists, apply guidance for this run
 3. **Read LEARNINGS.md** — Check for applicable prior knowledge
-4. **Read AUTONOMOUS-LOG.md** — If resuming, understand prior state
-5. **Create branch** — `git checkout -b auto/<project>-<YYYYMMDD-HHMM>`
-6. **Initialize log** — Create/append run header to AUTONOMOUS-LOG.md
-7. **Start timer** — Track elapsed time against budget
+4. **Read `analysis/INDEX.md`** — If exists, note relevant analyses and pending predictions
+5. **Read AUTONOMOUS-LOG.md** — If resuming, understand prior state
+6. **Create branch** — `git checkout -b auto/<project>-<YYYYMMDD-HHMM>`
+7. **Initialize log** — Create/append run header to AUTONOMOUS-LOG.md
+8. **Start timer** — Track elapsed time against budget
 
 ## Execution Loop
 

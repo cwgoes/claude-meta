@@ -54,15 +54,16 @@ If project not found, list available projects and ask user to specify.
 3. **Read LOG.md** — Understand prior work and decisions
 4. **Read LEARNINGS.md** — Check for applicable learnings (workspace-level)
 5. **Read context-state.json** — If exists, display prior session info (see Context State below)
-6. **Run `git status` from project directory** — Each project is its own git repo per Repository Model
-7. **Check submodules** — If project uses submodules, note their status
-8. **Build objective trace** — Map current level to root
-9. **Assess state** — Determine what's complete, in-progress, blocked
-10. **Compute delta** — What remains to reach success criteria
-11. **Confirm working level** — If hierarchy exists, confirm which level to work at
-12. **Set active project** — Note the active project for session context
-13. **Write context-state.json** — Create or update with status "active" (see Context State below)
-14. **Cross-session pattern detection** — Scan LOG.md for recurring patterns (see below)
+6. **Read analysis/INDEX.md** — If exists, note active analyses and topics for discovery
+7. **Run `git status` from project directory** — Each project is its own git repo per Repository Model
+8. **Check submodules** — If project uses submodules, note their status
+9. **Build objective trace** — Map current level to root
+10. **Assess state** — Determine what's complete, in-progress, blocked
+11. **Compute delta** — What remains to reach success criteria
+12. **Confirm working level** — If hierarchy exists, confirm which level to work at
+13. **Set active project** — Note the active project for session context
+14. **Write context-state.json** — Create or update with status "active" (see Context State below)
+15. **Cross-session pattern detection** — Scan LOG.md for recurring patterns (see below)
 
 ## Cross-Session Pattern Detection
 
@@ -133,6 +134,13 @@ Root: [root objective]
 ## Applicable Learnings
 [From LEARNINGS.md]
 - [Learning ID]: [relevance]
+
+## Active Analyses
+[From analysis/INDEX.md, if exists]
+- A001: [Title] — [topics]
+- A002: [Title] — [topics]
+
+(Or: "No analysis/ directory")
 
 ## Success Criteria
 - [ ] [criterion 1]

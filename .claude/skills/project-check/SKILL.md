@@ -63,6 +63,7 @@ Use when:
 | **Verification Compliance** | Standard+ commits have verification records |
 | **Plan Learnings** | Plan sessions reference LEARNINGS.md |
 | **Autonomous Format** | AUTONOMOUS-LOG.md valid (if exists) |
+| **Analyses** | analysis/INDEX.md valid (if exists), entries match files |
 
 ## Protocol
 
@@ -213,6 +214,35 @@ If AUTONOMOUS-LOG.md exists, validate format and completeness.
   - [issue description]
 ```
 
+## Analyses Audit
+
+If analysis/ directory exists, validate structure and consistency.
+
+**Checks:**
+| Check | Expected |
+|-------|----------|
+| INDEX.md exists | If analysis/ directory exists |
+| INDEX.md format valid | Main table + Topic Index |
+| Entries match files | Each A###-*.md in directory has INDEX.md entry |
+| Files match entries | Each INDEX.md entry has corresponding file |
+| Topics consistent | Topic Index references valid analysis IDs |
+| Status values valid | active, validated, superseded, or archived |
+| Predictions tracked | Predictions have validation status (⏳/✓/✗) |
+
+**Output:**
+```
+- analysis/ exists: [yes/no]
+- INDEX.md valid: [yes/no]
+- Analyses: [N]
+- Status breakdown: [N active, N validated, N superseded]
+- Orphaned files (no INDEX entry): [list]
+- Missing files (INDEX entry, no file): [list]
+- Pending predictions: [N]
+- Falsified predictions without learnings: [list]
+- Issues:
+  - [issue description]
+```
+
 ## Issues
 1. [Issue] — [severity: low/medium/high] — [remediation]
 2. ...
@@ -239,5 +269,7 @@ For common issues, offer to fix:
 - **Missing boundaries** → Suggest boundary definitions
 - **LOG integrity** → Identify malformed entries
 - **Checkpoint gaps** → Note commits needing session links
+- **Analysis INDEX gaps** → Offer to update INDEX.md with missing entries
+- **Falsified predictions without learnings** → Prompt for learning capture
 
 Do not auto-fix without user consent.

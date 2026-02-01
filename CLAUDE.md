@@ -464,6 +464,7 @@ Invoke via `/autonomous-review <project>`:
 - Context budget: OBJECTIVE.md + LOG.md ≤ 10% of context (~50-80KB)
   - *Rationale:* Agent needs ~90% for code, exploration, and reasoning. Exceeding this crowds out working memory.
   - *Flexibility:* For dense technical projects with minimal code context, up to 20% acceptable.
+  - *Analyses:* INDEX.md counts toward budget; individual analyses are read on-demand (not loaded by default).
 - Depth limit: Maximum 3 levels
   - *Rationale:* Verification requires checking all levels. Beyond 3, trace maintenance exceeds benefit.
 
@@ -517,6 +518,9 @@ workspace/                    # May be git repo for metadata
         ├── OBJECTIVE.md
         ├── LOG.md
         ├── LEARNINGS.md      # Beta-specific learnings
+        ├── analysis/         # Research artifacts (see Analyses)
+        │   ├── INDEX.md
+        │   └── A001-*.md
         ├── core/             # submodule (own repo, pinned)
         └── subprojects/
             └── beta-utils/   # subdirectory (same repo)
@@ -754,13 +758,168 @@ If a learning only avoids exact recurrence, it needs generalization before propa
 
 #### Plan Agent Requirements
 
-Plan agents MUST read learnings before recommending approaches:
+Plan agents MUST read learnings and analyses before recommending approaches:
 
+**Learnings:**
 1. **Workspace LEARNINGS.md** — Always read
 2. **Project LEARNINGS.md** — Read if working within a project
 3. **Subproject LEARNINGS.md** — Read if working within a subproject
 
-Search all applicable levels for relevant entries. Note applicable learnings by ID in plan output.
+**Analyses:**
+4. **Project `analysis/INDEX.md`** — If exists, match task keywords against topics and read relevant analyses
+
+Search all applicable levels for relevant entries. Note applicable learnings and analyses by ID in plan output.
+
+### Analyses
+
+Analyses are persistent research artifacts capturing investigation, conclusions, and predictions about approaches, technologies, or design decisions. Unlike session entries in LOG.md, analyses are topic-specific documents that accumulate validation over time.
+
+#### Directory Structure
+
+```
+project/
+├── analysis/
+│   ├── INDEX.md              # Topic index for discovery
+│   ├── A001-topic-name.md    # Individual analyses
+│   └── ...
+```
+
+Subprojects may have their own `analysis/` directories with `SA###` prefixes.
+
+#### Analysis Document Format
+
+```markdown
+---
+id: A001
+title: [Descriptive Title]
+created: [YYYY-MM-DD]
+updated: [YYYY-MM-DD]
+status: active | validated | superseded | archived
+relates_to:
+  objective: "[Which objective/criterion this informs]"
+  criteria: ["SC-1", "SC-3"]
+topics: [keyword1, keyword2, keyword3]
+supersedes: []
+superseded_by: null
+---
+
+# [Title]
+
+## Question
+[What this analysis answers — should connect to an objective]
+
+## Recommendation
+[Clear conclusion with rationale — 2-5 sentences]
+
+## Predictions
+[Testable claims that can be validated during implementation]
+
+| ID | Prediction | Confidence | Validated | Outcome |
+|----|------------|------------|-----------|---------|
+| P1 | [Specific, falsifiable claim] | High/Med/Low | ⏳/✓/✗ | [When tested] |
+
+## Analysis
+[Detailed investigation — structure as needed]
+
+## Alternatives Considered
+
+| Approach | Pros | Cons | Verdict |
+|----------|------|------|---------|
+| [Option] | ... | ... | Selected / Rejected: [reason] |
+
+## Open Questions
+- [Unknowns that may affect predictions or recommendations]
+
+## References
+- [Source](url) — [why authoritative]
+
+## Validation Log
+[Append entries as predictions are tested or analysis is applied]
+
+### [YYYY-MM-DD] — P1 Validated
+- **Evidence:** [What confirmed the prediction]
+
+### [YYYY-MM-DD] — P2 Falsified
+- **Expected:** [What the prediction claimed]
+- **Actual:** [What happened]
+- **Reasoning Error:** [Why the prediction seemed reasonable]
+- **Counterfactual:** [What research/testing would have caught this]
+- **Generalized Lesson:** [Abstract principle — may warrant propagation to LEARNINGS.md]
+- **Pattern Class:** [From failure taxonomy, if applicable]
+```
+
+#### INDEX.md Format
+
+```markdown
+# Analysis Index
+
+| ID | Title | Topics | Status |
+|----|-------|--------|--------|
+| A001 | [Title] | topic1, topic2 | active |
+| A002 | [Title] | topic3 | validated |
+
+## Topic Index
+
+| Topic | Analyses |
+|-------|----------|
+| topic1 | A001 |
+| topic2 | A001, A003 |
+```
+
+#### Lifecycle
+
+**Status transitions:**
+- `active` — Current, informing decisions
+- `validated` — Predictions confirmed, approach proven sound
+- `superseded` — Replaced by newer analysis (set `superseded_by`)
+- `archived` — Objective changed, no longer relevant
+
+**Supersession rule:** Never delete analyses. Mark `superseded_by` and retain for audit trail.
+
+#### Learnings Integration
+
+Learnings are tracked where they originate:
+
+| Learning Source | Location |
+|-----------------|----------|
+| Prediction falsified in analysis | That analysis's Validation Log |
+| General insight from analysis work | LEARNINGS.md with reference to analysis |
+| Cross-cutting pattern (applies beyond this analysis) | LEARNINGS.md |
+
+**Propagation heuristic:** If a falsified prediction reveals a pattern that would apply to other analyses or projects, add to LEARNINGS.md and reference the analysis:
+```markdown
+### [FP-XXX] [Title]
+- **Source:** [project], A001
+- **See Also:** A001 Validation Log [YYYY-MM-DD]
+```
+
+The analysis Validation Log captures the specific failure; LEARNINGS.md captures the generalized lesson if one exists.
+
+#### Discovery Protocol
+
+Plan agents read `analysis/INDEX.md` before recommending approaches (see also Plan Agent Requirements under Learnings):
+
+1. If `analysis/INDEX.md` exists, scan topic index
+2. Match task keywords against topics
+3. Read relevant analyses
+4. Note in output which analyses informed the plan
+5. Flag if proposed approach contradicts validated predictions
+
+This is checkpoint-based, not continuous. Discovery happens when planning, not spontaneously mid-conversation.
+
+#### Creation Guidelines
+
+Create an analysis when:
+- Research produces conclusions that will inform future decisions
+- Multiple approaches were evaluated with clear trade-offs
+- Predictions can be made that implementation will test
+
+Skip analysis (use LOG.md instead) when:
+- Findings are session-specific with no future relevance
+- No testable predictions or recommendations emerge
+- Quick lookup that doesn't warrant persistence
+
+**Prediction quality:** Predictions should be specific and falsifiable. "This should work" is not a prediction. "M31 field ops in WASM will have <50% overhead vs native" is.
 
 ### Session Protocol
 
@@ -778,10 +937,11 @@ Once project selected, the protocol executes:
 2. Read OBJECTIVE.md — success criteria
 3. Read LOG.md — decision history
 4. Read LEARNINGS.md — all applicable levels (workspace + project + subproject if exists)
-5. `git status` — working tree state
-6. Build objective trace
-7. Confirm working level
-8. **Initialize context invariants** (see Context Persistence)
+5. Read `analysis/INDEX.md` — if exists, note active analyses and topics
+6. `git status` — working tree state
+7. Build objective trace
+8. Confirm working level
+9. **Initialize context invariants** (see Context Persistence)
 
 **End** (invoke via `/session-end`):
 
@@ -810,6 +970,12 @@ Core requirements:
 
 ### Learnings
 [If any — use standard learning format]
+
+### Analyses
+[If any created, updated, or validated]
+- Created: A### — [title]
+- Updated: A### — [what changed]
+- Validated: A###.P# — [outcome]
 
 ### State
 - Git: [clean | uncommitted changes]
