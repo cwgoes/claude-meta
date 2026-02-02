@@ -1316,13 +1316,35 @@ Domain overlays augment, not replace, the base agent's protocols. Verification, 
 
 ### Parallelization
 
-**IMPORTANT:** When tasks are independent, use parallel subagents liberally. Compute is not a constraint.
+**Parallelism is automatic.** The orchestrator runs independent tasks concurrently without user intervention.
 
-- Spawn parallel subagents for exploration, research, implementation, verification
-- **Pass context payload** to every subagent (see Context Persistence)
-- Define explicit file boundaries before parallel implementation
-- Aggregate and integrate results before proceeding
-- If boundaries unclear: use feature branches
+**Default to background:**
+- Explore agents (read-only, always independent)
+- Research agents (external lookups, always independent)
+- Implement agents with non-overlapping file boundaries
+- Verify agents checking independent components
+
+**Use foreground:**
+- Plan agents (may need user input)
+- Tasks where boundaries are unclear
+- Single critical-path task user is waiting for
+
+**Orchestrator behavior:**
+1. Identify independent subtasks
+2. Spawn them as background agents (single message, multiple Task calls)
+3. Continue with other work or wait for results
+4. Aggregate outputs when ready
+5. Proceed to dependent work
+
+**Aggregation:**
+- Read background agent outputs via TaskOutput
+- Collect learning candidates from all agents
+- Verify results meet expectations
+- If conflict or failure: re-run in foreground
+
+**Failure recovery:** If a background agent fails, automatically retry in foreground where clarification is possible.
+
+**Traceability:** Background execution is an implementation detail. Standard commit messages and LOG.md entries suffice. Only note parallel execution if it's relevant to understanding the work.
 
 ### Parallel Conflict Prevention
 
@@ -1434,7 +1456,7 @@ alignment:
 ### Required Protocols by Document Type
 
 **Agents:**
-- Verification (tier-appropriate)
+- Verification (tier-appropriate for artifact-producing agents; completeness/accuracy checks for read-only agents)
 - Learning candidates output
 - Failure protocol
 - Git authority constraints

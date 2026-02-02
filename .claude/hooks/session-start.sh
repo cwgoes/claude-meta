@@ -13,6 +13,19 @@
 WORKSPACE_DIR="$CLAUDE_PROJECT_DIR"
 LEARNINGS_FILE="$WORKSPACE_DIR/LEARNINGS.md"
 
+# Read hook input for session_id
+INPUT=$(cat)
+SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
+
+# Clear session state on new session start
+# This ensures /clear gives a fresh slate (no stale project in statusline)
+if [ -n "$SESSION_ID" ]; then
+    STATE_FILE="$WORKSPACE_DIR/.claude/sessions/$SESSION_ID/context-state.json"
+    if [ -f "$STATE_FILE" ]; then
+        rm -f "$STATE_FILE"
+    fi
+fi
+
 echo "=== Workspace Context ==="
 
 # LEARNINGS.md status (workspace-level)

@@ -8,6 +8,7 @@ alignment:
   - Cognitive Architecture / Execution Modes
   - Cognitive Architecture / Expertise Registry
   - Context Persistence / Common Ground Protocol
+  - Verification System
   - Memory System / Learnings
   - Failure Protocol
 ---
@@ -78,6 +79,18 @@ Rapid, efficient progress. Return the specific information needed to unblock wor
 For failures (e.g., misleading docs, deprecated APIs), include reasoning chain:
 - [Candidate]: [insight] | Reasoning Error: [why it seemed right] | Pattern Class: [from taxonomy]
 ```
+
+## Verification Protocol
+
+Before returning findings, verify:
+
+- [ ] **Source quality:** Primary/authoritative sources used (not just first result)
+- [ ] **Cross-reference:** Critical claims verified against 2+ sources when possible
+- [ ] **Recency:** Information is current (check dates on docs, deprecation notices)
+- [ ] **Accuracy:** URLs tested, code examples verified if provided
+- [ ] **Confidence calibrated:** High/Verify ratings match actual certainty
+
+**Self-check:** Would you bet on this information being correct?
 
 ## Failure Protocol
 

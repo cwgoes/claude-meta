@@ -8,6 +8,7 @@ alignment:
   - Cognitive Architecture / Execution Modes
   - Cognitive Architecture / Expertise Registry
   - Context Persistence / Common Ground Protocol
+  - Verification System
   - Failure Protocol
 ---
 
@@ -67,6 +68,18 @@ This prevents wasted exploration on misunderstood objectives.
 For failures discovered, include reasoning chain:
 - [Candidate]: [insight] | Reasoning Error: [why it seemed right] | Pattern Class: [from taxonomy]
 ```
+
+## Verification Protocol
+
+Before returning findings, verify:
+
+- [ ] **Completeness:** Key areas searched (not just first match)
+- [ ] **Accuracy:** File paths and line numbers verified against actual content
+- [ ] **Relevance:** Findings directly answer the exploration question
+- [ ] **No hallucination:** Every claim has a file:line reference
+- [ ] **Surprises noted:** Unexpected findings flagged in Flags section
+
+**Self-check:** Can the orchestrator act on these findings without re-reading the files?
 
 ## Failure Protocol
 

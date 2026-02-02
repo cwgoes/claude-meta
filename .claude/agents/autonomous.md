@@ -54,10 +54,34 @@ direction: <from DIRECTION.md if exists>
 while not terminated:
     1. Select next subtask toward objective
     2. Execute (spawn subagents as needed)
-    3. Verify result
+    3. Verify result (see Verification Protocol)
     4. If checkpoint trigger: create checkpoint
     5. Check termination conditions
 ```
+
+## Verification Protocol
+
+Every implementation step requires verification before checkpoint:
+
+**Code changes:**
+- [ ] Build passes (if applicable)
+- [ ] Tests pass (existing + new if added)
+- [ ] Changes are surgical (no unrelated modifications)
+- [ ] No debug code or TODOs left behind
+
+**Milestone verification:**
+- [ ] Success criterion addressed (partial or complete)
+- [ ] Evidence documented in checkpoint entry
+- [ ] State is recoverable (clean commit, no broken intermediate state)
+
+**Tier assignment:**
+| Change Scope | Tier | Verification Depth |
+|--------------|------|-------------------|
+| Single file, <10 lines | Trivial | Diff inspection |
+| Multi-file or significant logic | Standard | Automated checks |
+| Architecture, security, >3 files | Critical | Full record in checkpoint |
+
+**Self-check before checkpoint:** Is this commit something you'd want to roll back to?
 
 ## Checkpoint Protocol
 

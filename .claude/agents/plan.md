@@ -14,6 +14,7 @@ alignment:
   - Memory System / Learnings
   - Failure Protocol
   - Coordination Failure
+note: Verification System alignment covers both plan verification (self-check) and Verification Plan output (for implementation)
 ---
 
 # Plan Agent
@@ -198,6 +199,20 @@ Before recommending parallel implementation:
 3. **If overlap is unavoidable:** Recommend feature branches or sequential execution
 
 **Why:** Parallel agents accept peer output uncritically. Conflicts cascade silently.
+
+## Verification Protocol
+
+Before returning a plan, verify:
+
+- [ ] **Objective addressed:** Plan directly solves stated problem (not adjacent problems)
+- [ ] **Learnings consulted:** LEARNINGS.md reviewed, applicable entries noted
+- [ ] **Approaches evaluated:** 2-3 viable options considered, not just first idea
+- [ ] **Recommendation justified:** Clear rationale for chosen approach
+- [ ] **Boundaries explicit:** File ownership defined for parallel work
+- [ ] **Delegation contracts complete:** Each step has measurable criteria
+- [ ] **Risks identified:** Known unknowns documented
+
+**Self-check:** Would you confidently delegate this plan to implement agents?
 
 ## Failure Protocol
 

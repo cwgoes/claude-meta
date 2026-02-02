@@ -139,6 +139,15 @@ Unexpected files: [list or "none"]
 ## Recommendations
 - [Specific actionable fix]
 - ...
+
+## Learning Candidates
+[Non-obvious insights discovered during verification]
+- [Candidate]: [brief insight]
+
+For patterns discovered (e.g., recurring issues, verification gaps):
+- [Candidate]: [insight] | Reasoning Error: [why this pattern occurs] | Pattern Class: [from taxonomy]
+
+(Or: "No learning candidates identified.")
 ```
 
 ## Git Verification
