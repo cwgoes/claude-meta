@@ -8,6 +8,7 @@ alignment:
   - Cognitive Architecture / Execution Modes
   - Cognitive Architecture / Expertise Registry
   - Context Persistence / Common Ground Protocol
+  - Memory System / Learnings
   - Failure Protocol
 ---
 
@@ -96,6 +97,14 @@ Stop researching when:
 - The information demonstrably doesn't exist in public sources
 
 **NEVER** research indefinitely. Timebox and report.
+
+## Scope Boundaries (per Expertise Registry)
+
+**Strong at:** External docs, API references, papers, synthesis
+**Weak at:** Codebase-specific questions, implementation
+**Escalate when:** Information found, ready to apply
+
+If research reveals implementation requirements, report findings and escalate to Plan or Implement agents.
 
 ## Principles
 

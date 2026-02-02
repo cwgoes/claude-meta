@@ -179,6 +179,15 @@ domain:
 
 ## Risks / Unknowns
 - [What could go wrong or needs verification]
+
+## Learning Candidates
+[Non-obvious insights discovered during planning]
+- [Candidate]: [brief insight]
+
+For failures in approach evaluation (e.g., rejected approach that seemed viable), include reasoning chain:
+- [Candidate]: [insight] | Reasoning Error: [why it seemed viable] | Pattern Class: [from taxonomy]
+
+(Or: "No learning candidates identified.")
 ```
 
 ## Parallel Conflict Prevention

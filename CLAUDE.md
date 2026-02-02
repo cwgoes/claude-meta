@@ -74,7 +74,7 @@ Upgrade to **Project** when:
 - Decomposition into subprojects needed
 - Multiple agents will work in parallel
 
-**Downgrade never happens.** Once a project exists, maintain it.
+**Mode persistence:** Once a project exists, maintain its structure. However, the Override Protocol (above) allows temporary suspension of project ceremonies within a session — this is not mode downgrade, it's streamlined operation within the existing mode.
 
 **Graduation is automatic with notification:**
 - Agent monitors for upgrade triggers during work
@@ -116,6 +116,58 @@ Autonomous mode (unattended)
 Project mode (review via /autonomous-review)
 ```
 
+### Experiments
+
+Experiments are git worktrees for parallel work on a project. They have the full project structure (OBJECTIVE.md, LOG.md, learnings, etc.) because they're the same project on a different branch.
+
+**Use cases:**
+- Try an alternative implementation approach
+- Work on multiple features in parallel
+- Isolate risky changes before merging
+
+**Commands:**
+
+| Command | Purpose |
+|---------|---------|
+| `/experiment <name>` | Create (if needed) and enter experiment |
+| `/experiment --list` | List experiments for current project |
+| `/experiment --exit` | Return to parent project (keeps experiment) |
+| `/experiment --end` | End experiment (merge, PR, or discard) |
+
+**Workflow:**
+```
+/project-start alpha           # Start on project
+/experiment new-cache          # Create & enter experiment
+/project-start alpha           # Orient (same project, different branch)
+  [work normally - commits, LOG.md, learnings all work]
+/experiment --end --merge      # Merge back and clean up
+```
+
+**Parallel windows:** Multiple Claude Code windows can work on different experiments simultaneously. Each window has isolated session state.
+
+```bash
+# Window 1                      # Window 2
+claude                          claude
+> /project-start alpha          > /project-start alpha
+> /experiment redis             > /experiment memcached
+> /project-start alpha          > /project-start alpha
+> [work on redis approach]      > [work on memcached approach]
+```
+
+**Structure:** Experiments create directories adjacent to the project:
+```
+projects/
+├── alpha/                    # Main project (main branch)
+├── alpha-exp-redis/          # Experiment worktree (exp/redis branch)
+└── alpha-exp-memcached/      # Experiment worktree (exp/memcached branch)
+```
+
+**Constraints:**
+- Must be in a project to create experiments
+- Experiment names must be unique per project
+- Clean working tree required for `--end` (commit or stash first)
+- Worktrees are local — push branches if you need remote backup
+
 ---
 
 ## Verification System
@@ -134,7 +186,14 @@ Every implementation must verify:
 |------|-------|----------------------|
 | **Trivial** | Single-file, < 10 lines | `git diff` + inspection note |
 | **Standard** | Multi-file or significant logic | Automated checks + criteria verification |
-| **Critical** | Architecture, security, interfaces | Full record + explicit user review |
+| **Critical** | Architecture, security, interfaces, or >3 files | Full record + explicit user review |
+
+**Critical tier triggers** (any of these):
+- Changes to public APIs or external interfaces
+- Authentication, authorization, or security-sensitive code
+- Data schema or migration changes
+- Changes spanning more than 3 files
+- Modifications to core abstractions or shared utilities
 
 ### Verification Gates
 
@@ -461,10 +520,10 @@ Invoke via `/autonomous-review <project>`:
 - Scope is clear and bounded
 
 **Constraints:**
-- Context budget: OBJECTIVE.md + LOG.md ≤ 10% of context (~50-80KB)
-  - *Rationale:* Agent needs ~90% for code, exploration, and reasoning. Exceeding this crowds out working memory.
-  - *Flexibility:* For dense technical projects with minimal code context, up to 20% acceptable.
-  - *Analyses:* INDEX.md counts toward budget; individual analyses are read on-demand (not loaded by default).
+- Context budget: OBJECTIVE.md + LOG.md should be readable in a single file read each
+  - *Measurement:* If either file exceeds ~2000 lines, it's approaching the limit
+  - *Rationale:* Agent needs most context for code, exploration, and reasoning
+  - *Analyses:* INDEX.md counts toward budget; individual analyses are read on-demand (not loaded by default)
 - Depth limit: Maximum 3 levels
   - *Rationale:* Verification requires checking all levels. Beyond 3, trace maintenance exceeds benefit.
 
@@ -1086,7 +1145,7 @@ delegation:
     - [criterion 2 - binary verifiable]
 
   # Resource constraints
-  effort_budget: small | medium | large
+  effort_budget: small | medium | large  # small: <1 hour, medium: 1-4 hours, large: >4 hours
 
   # Escalation
   escalate_when:
@@ -1115,7 +1174,9 @@ Before acting on delegation, subagents must:
 
 Orchestrator reviews acknowledgment before subagent proceeds with significant work.
 
-**Rationale:** Research shows "silent misunderstandings" propagate through downstream work undetected. Explicit acknowledgment catches divergence early. This adds one round-trip but prevents wasted work from misaligned execution.
+**Skip criteria:** For `effort_budget: small` delegations with clear, specific objectives (not "investigate" or "improve"), subagents may proceed directly after a brief (1-2 sentence) understanding echo. Full protocol applies to medium/large delegations or ambiguous objectives.
+
+**Rationale:** Research shows "silent misunderstandings" propagate through downstream work undetected. Explicit acknowledgment catches divergence early. The full protocol adds one round-trip but prevents wasted work from misaligned execution. Small, well-specified tasks don't need this overhead.
 
 #### State Externalization
 

@@ -20,6 +20,19 @@ Quick reference for agents. Full specification: [CLAUDE.md](CLAUDE.md)
 
 Default to ad-hoc. Graduate to project when scope expands. Autonomous only on explicit `/autonomous` invocation.
 
+## Experiments
+
+Git worktrees for parallel work. Full project structure on separate branch.
+
+| Command | Purpose |
+|---------|---------|
+| `/experiment <name>` | Create/enter experiment |
+| `/experiment --list` | List experiments |
+| `/experiment --exit` | Exit (keeps experiment) |
+| `/experiment --end` | Merge, PR, or discard |
+
+Worktrees at `projects/[project]-exp-[name]/`. Multiple windows can work different experiments in parallel.
+
 ## Context State (Automatic)
 
 **File:** `.claude/sessions/<session_id>/context-state.json` — managed by hooks, read by statusline.
