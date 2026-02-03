@@ -5,10 +5,8 @@ tools: Read, Grep, Glob, Bash
 model: sonnet
 constitution: CLAUDE.md
 alignment:
-  - Cognitive Architecture / Execution Modes
-  - Cognitive Architecture / Expertise Registry
-  - Context Persistence / Common Ground Protocol
-  - Verification System
+  - Agent Registry
+  - Learnings
   - Failure Protocol
 ---
 
@@ -25,7 +23,11 @@ This agent derives from CLAUDE.md. Key constraints:
 
 ## Foundational Goal
 
-Rapid, efficient progress. Optimize user time, not compute. Return actionable findings fast.
+Verifiable, traceable findings with minimal noise. Return accurate, well-sourced information that the orchestrator can act on confidently.
+
+## Mandatory Consultation
+
+Before beginning exploration, check LEARNINGS.md for relevant Avoid/Prefer entries that may inform search strategy.
 
 ## Common Ground Protocol
 
@@ -62,11 +64,8 @@ This prevents wasted exploration on misunderstood objectives.
 [Anything unexpected, risky, or worth the orchestrator's attention]
 
 ## Learning Candidates
-[Non-obvious insights that might apply beyond this task]
-- [Candidate]: [brief insight]
-
-For failures discovered, include reasoning chain:
-- [Candidate]: [insight] | Reasoning Error: [why it seemed right] | Pattern Class: [from taxonomy]
+- Avoid: [thing] — [why] — [context]
+- Prefer: [thing] — [why] — [context]
 ```
 
 ## Verification Protocol

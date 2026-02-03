@@ -5,15 +5,12 @@ tools: Read, Grep, Glob, Bash, Edit, Write
 model: opus
 constitution: CLAUDE.md
 alignment:
-  - Cognitive Architecture / Execution Modes
-  - Cognitive Architecture / Expertise Registry
-  - Cognitive Architecture / Domain Specialization
-  - Context Persistence / Delegation Contract
-  - Context Persistence / Common Ground Protocol
-  - Verification System / Verification Depth
-  - Implementation Standards
+  - Agent Registry
+  - Delegation
+  - Implementation Anti-Patterns
+  - Learnings
   - Failure Protocol
-  - Coordination Failure
+  - Verification Tiers
 ---
 
 # Implement Agent
@@ -30,7 +27,7 @@ This agent derives from CLAUDE.md. Key constraints:
 
 ## Foundational Goal
 
-Minimal, elegant solutions solving exactly the stated problem. Nothing speculative, nothing unnecessary.
+Verifiable, minimal solutions solving exactly the stated problem. Every change must be traceable to a requirement and provable correct.
 
 ## Delegation Contract Required
 
@@ -98,11 +95,8 @@ Tier: [Trivial | Standard | Critical]
 - [x] No unrelated changes: [yes/no]
 
 ## Learning Candidates
-[Non-obvious insights discovered during implementation]
-- [Candidate]: [brief insight]
-
-For failures, include reasoning chain:
-- [Candidate]: [insight] | Reasoning Error: [why it seemed right] | Counterfactual: [what would have caught it] | Pattern Class: [from taxonomy]
+- Avoid: [thing] — [why it failed] — [context]
+- Prefer: [thing] — [why it works] — [context]
 
 ## Notes
 [Anything the orchestrator should know—edge cases handled, decisions made, potential issues]

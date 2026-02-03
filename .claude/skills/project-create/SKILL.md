@@ -4,11 +4,8 @@ description: Start a new project - creates directory, defines objectives, and se
 constitution: CLAUDE.md
 alignment:
   - Work Modes
-  - Memory System / Projects
-  - Memory System / Repository Model
-  - Traceability System
-  - Context Persistence / Context Invariants
-  - Context Persistence / State Externalization
+  - Core Invariants
+  - Checkpoint Model
 ---
 
 # /project-create
@@ -66,9 +63,30 @@ Before creating, clarify with user:
 [Clear statement of what we're building]
 
 ## Success Criteria
-- [ ] [Verifiable criterion 1]
-- [ ] [Verifiable criterion 2]
-- [ ] [Verifiable criterion 3]
+
+### SC-1: [Verifiable criterion]
+**Status:** Pending
+**Files:**
+- `[path]` — [role/purpose]
+**Verification:** [command or manual check]
+
+### SC-2: [Verifiable criterion]
+**Status:** Pending
+**Files:**
+- `[path]` — [role/purpose]
+**Verification:** [command or manual check]
+
+### SC-3: [Verifiable criterion - composite example]
+**Status:** Pending
+**Subproject:** `crates/my-component/`
+**Interface:**
+- **Inputs:** [what parent provides]
+- **Outputs:** [what subproject delivers]
+- **Guarantees:** [invariants/requirements]
+
+## Infrastructure
+*Files supporting multiple criteria or project-wide concerns.*
+- `[path]` — [purpose]
 
 ## Scope
 **In scope:**
@@ -77,19 +95,40 @@ Before creating, clarify with user:
 **Out of scope:**
 - [What's explicitly excluded]
 
-## Boundaries
-| Component | Files/Modules |
-|-----------|---------------|
-| [Component 1] | [paths] |
-| [Component 2] | [paths] |
-
 ## Dependencies
 - [External dependencies]
 - [Sequencing requirements]
-
-## Subprojects
-[None, or references to subproject directories]
 ```
+
+## Criteria Types
+
+**Leaf criterion** (files ≤80KB total):
+```markdown
+### SC-1: User authentication
+**Status:** Pending
+**Files:**
+- `src/auth.ts` — OAuth flow
+**Tests:** `npm test -- auth.test.ts` | `tests/auth.test.ts`
+**Benchmark:** `npm run bench:auth` | latency_p99 < 50ms
+**Verification:** `npm test -- --grep auth`
+```
+
+**Optional fields:**
+- **Tests:** `command | test_files` — Criterion-specific test command and files
+- **Benchmark:** `command | metric op threshold, ...` — Performance verification
+
+**Composite criterion** (files >80KB, decomposed into subproject):
+```markdown
+### SC-3: Performant prover
+**Status:** Pending
+**Subproject:** `crates/prover/`
+**Interface:**
+- **Inputs:** Circuit constraints
+- **Outputs:** Valid proof
+- **Guarantees:** Soundness, ≥1MHz
+```
+
+Subproject OBJECTIVE.md must declare `parent_criterion: SC-3` in YAML frontmatter.
 
 ## LOG.md Template
 
@@ -135,7 +174,8 @@ Before creating, clarify with user:
 ## Verification
 - [x] Structure valid
 - [x] Git repository initialized
-- [x] Context budget: [Z KB] / 80KB
+- [x] Context budget: All leaf criteria ≤80KB
+- [x] Criteria classified: [N leaf, M composite]
 - [x] Depth: [N] / 3 max
 - [x] Success criteria defined
 - [x] Boundaries specified

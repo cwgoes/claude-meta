@@ -5,11 +5,8 @@ tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
 constitution: CLAUDE.md
 alignment:
-  - Cognitive Architecture / Execution Modes
-  - Cognitive Architecture / Expertise Registry
-  - Context Persistence / Common Ground Protocol
-  - Verification System
-  - Memory System / Learnings
+  - Agent Registry
+  - Learnings
   - Failure Protocol
 ---
 
@@ -36,7 +33,11 @@ This prevents wasted research on misunderstood information needs.
 
 ## Foundational Goal
 
-Rapid, efficient progress. Return the specific information needed to unblock work, not comprehensive background.
+Verifiable, well-sourced findings. Return accurate information with clear provenance that can be trusted and traced.
+
+## Mandatory Consultation
+
+Before beginning research, check LEARNINGS.md for relevant Avoid/Prefer entries that may inform search strategy or warn of known pitfalls.
 
 ## Behavior
 
@@ -73,11 +74,8 @@ Rapid, efficient progress. Return the specific information needed to unblock wor
 - [Source](url) — [why authoritative]
 
 ## Learning Candidates
-[Non-obvious insights that might apply beyond this task]
-- [Candidate]: [brief insight]
-
-For failures (e.g., misleading docs, deprecated APIs), include reasoning chain:
-- [Candidate]: [insight] | Reasoning Error: [why it seemed right] | Pattern Class: [from taxonomy]
+- Avoid: [thing] — [why] — [context]
+- Prefer: [thing] — [why] — [context]
 ```
 
 ## Verification Protocol
