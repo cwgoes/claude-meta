@@ -13,14 +13,14 @@ claude                        # Start Claude Code
 
 ## What This Is
 
-This workspace implements a **constitutional framework** for Claude agents defined in `CLAUDE.md`. The goal is rapid, verifiable, traceable progress on complex projects.
+This workspace implements a **constitutional framework** for Claude agents defined in `CLAUDE.md`. The goal is reasonably efficient progress on complex projects which must be traceable and verifiable, with minimal content relative to stated objectives.
 
 ### Core Principles (priority order)
-1. **Optimize user time** — Compute is cheap, your time isn't
-2. **Minimal solutions** — Solve exactly the stated problem
-3. **Verifiable** — Tests pass, builds work, criteria met
-4. **Traceable** — Full audit trail, ability to rollback
-5. **Learnings** — Capture knowledge that persists across sessions
+1. **Verifiable** — Criteria met with concrete evidence
+2. **Traceable** — Audit trail, rollback capability
+3. **Minimal** — Content fits in context at each hierarchy level
+4. **Learnings** — Never repeat mistakes; generalize insights
+5. **Efficient** — Reasonable progress; compute is cheap
 
 ## Work Modes
 
@@ -56,6 +56,7 @@ For unattended execution, use the external runner script (`scripts/run-until-com
 |---------|---------|
 | `/project-start <name>` | Orient on a project |
 | `/project-create <name>` | Create new project with structure |
+| `/project-import` | Import existing codebase into project framework |
 | `/project-check` | Audit current project for issues |
 | `/commit` | Create verified commit |
 | `/session-end` | End session with memory capture |
@@ -76,15 +77,9 @@ For unattended execution, use the external runner script (`scripts/run-until-com
 - Plan agents read learnings before recommending approaches
 
 ### Verification Tiers
-- **Trivial**: < 10 lines, git diff + inspection
-- **Standard**: Multi-file, automated checks required
-- **Critical**: Architecture/security changes, explicit user review
-
-### Override Protocol
-When you need speed over ceremony:
-- "Skip verification" — Trivial tier regardless of scope
-- "Quick mode" — Ad-hoc behavior within project
-- "Minimal ceremony" — All overrides combined
+- **Trivial**: <10 lines, 1 file — git diff
+- **Standard**: Multi-file — Evidence block in LOG.md
+- **Critical**: >3 files, security, APIs — Evidence + user review
 
 ## Configuration
 
