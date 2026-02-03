@@ -2,8 +2,6 @@
 
 Constitution for all Claude agents and skills in this workspace.
 
-**Quick reference:** [CLAUDE-quick.md](CLAUDE-quick.md)
-
 ---
 
 ## Foundational Goal
