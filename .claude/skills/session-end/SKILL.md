@@ -4,11 +4,9 @@ description: End current session with appropriate memory capture for context con
 constitution: CLAUDE.md
 alignment:
   - Work Modes
-  - Memory System / Session Protocol
-  - Memory System / Repository Model
-  - Traceability System
-  - Memory System / Learnings
-  - Context Persistence / State Externalization
+  - Learnings
+  - Checkpoint Model
+  - Plans
 ---
 
 # Session End Protocol
@@ -70,57 +68,21 @@ For multi-session projects or significant work worth preserving.
 
 2. **Extract learning candidates** (ACTIVE — do not skip)
 
-   Scan the session for learning candidates:
+   Scan the session for:
+   - Things that failed or caused problems → **Avoid**
+   - Things that worked well or solved problems → **Prefer**
 
-   | Signal | Learning Type |
-   |--------|---------------|
-   | Error encountered and resolved | Failure |
-   | Non-obvious solution discovered | Technical |
-   | Workflow improvement made | Process |
-   | Pattern worth reusing | Pattern |
-
-   **Apply capture criteria** (must meet ≥2):
-   - Reusable: applies to ≥2 other tasks you can name
-   - Non-documented: not obvious from official docs
-   - Cost-saving: rediscovery would take >5 minutes
-   - Failure-derived: learned from something that didn't work
+   **Capture when:** Discovery cost >5 minutes AND applies to future work.
 
    **Present candidates to user:**
    ```
    ## Learning Candidates Detected
 
-   ### [Candidate 1]
-   - **Type:** [Technical|Process|Pattern|Failure]
-   - **Context:** [when this applies]
-   - **Insight:** [the learning]
-   - **Meets criteria:** [which 2+ criteria]
-   - **Propagate to LEARNINGS.md?** [Y/n]
+   - Avoid: [thing] — [why it failed] — [context]
+   - Prefer: [thing] — [why it works] — [context]
+
+   Propagate to LEARNINGS.md? [Y/n]
    ```
-
-   **For Failure-type learnings, use extended template:**
-   ```
-   ### [Candidate Title]
-   - **Type:** Failure
-   - **Context:** [when this applies]
-   - **Insight:** [what went wrong]
-   - **Evidence:** [file:line, error message, observation]
-
-   **Reasoning Chain (required for Failures):**
-   - **What I expected:** [the anticipated outcome]
-   - **Why I thought that:** [the reasoning that made this seem right]
-   - **Reasoning Error:** [the flaw in that reasoning]
-   - **Counterfactual:** [what check/research would have prevented this]
-   - **Generalized Lesson:** [abstract principle for future avoidance]
-   - **Pattern Class:** [from taxonomy: Ecosystem Overconfidence | Insufficient Research | Scope Creep | Coupling Blindness | Complexity Escalation | Verification Gap | Specification Ambiguity]
-
-   - **Meets criteria:** [which 2+ capture criteria]
-   - **Propagate to LEARNINGS.md?** [Y/n]
-   ```
-
-   If reasoning chain is incomplete, prompt:
-   - "What made this approach seem reasonable at the time?"
-   - "What single check would have caught this before failing?"
-   - "What's the general principle here, beyond this specific case?"
 
    If no candidates detected, state: "No learning candidates identified this session."
 
@@ -135,20 +97,8 @@ For multi-session projects or significant work worth preserving.
    - [Choice]: [Rationale]
 
    ### Learnings
-   [From step 2 — include approved candidates]
-
-   #### [Title]
-   - **Type:** Technical | Process | Pattern | Failure
-   - **Context:** [When this applies]
-   - **Insight:** [The actual learning]
-   - **Evidence:** [file:line, measurement, observation]
-   - **Propagate:** Yes/No
-
-   ### Analyses
-   [If any created, updated, or validated]
-   - Created: A### — [title]
-   - Updated: A### — [what changed]
-   - Validated: A###.P# — [outcome]
+   - Avoid: [thing] — [why] — [context]
+   - Prefer: [thing] — [why] — [context]
 
    ### State
    - Git: [clean | uncommitted changes in X files]
@@ -158,26 +108,14 @@ For multi-session projects or significant work worth preserving.
    - [What to do when resuming]
    ```
 
-4. **Propagate learnings** (if any marked `Propagate: Yes`)
+4. **Propagate learnings** (if user approved)
    - Read LEARNINGS.md
    - Check for duplicates
-   - Determine next ID (LP-NNN for Technical, PP-NNN for Process, FP-NNN for Failure)
-   - Append new learnings with source reference:
+   - Append new learnings (format per CLAUDE.md):
      ```markdown
-     ### [ID] [Title]
-     - **Source:** [project, session date]
-     - **Context:** [When this applies]
-     - **Insight:** [The learning]
-     - **Applicability:** [Where to use it]
-
-     For Failure Patterns (FP-NNN), also include:
-     - **Reasoning Error:** [Why this seemed reasonable]
-     - **Counterfactual:** [What would have prevented it]
-     - **Generalized Lesson:** [Abstract principle]
-     - **Pattern Class:** [From taxonomy]
-     - **See Also:** [Related learning IDs, if any]
+     Avoid: [thing] — [why it failed] — [context]
+     Prefer: [thing] — [why it works] — [context]
      ```
-   - Update Propagation Log table
 
 5. **Commit decision**
    - If verified and complete → offer to commit with proper message format
@@ -244,16 +182,15 @@ Files modified:
 - [list]
 
 Options:
-1. **Full checkpoint** — Commit + LOG.md entry (for significant work/decisions)
-2. **Lightweight checkpoint** — Commit only, no LOG.md (for incremental progress)
-3. **Stash** — Preserve for later (`git stash push -m "session-end [date]"`)
-4. **Discard** — Abandon changes (`git checkout .`)
-5. **Leave** — Keep dirty state, note in LOG.md for next session
+1. **Commit** — LOG.md entry + commit (entry can be brief for incremental progress)
+2. **Stash** — Preserve for later (`git stash push -m "session-end [date]"`)
+3. **Discard** — Abandon changes (`git checkout .`)
+4. **Leave** — Keep dirty state, note in LOG.md for next session
 
 Which option?
 ```
 
-Per CLAUDE.md Checkpoint Model: use lightweight for incremental saves, full for session boundaries or decisions worth recording.
+Per CLAUDE.md Checkpoint Model: always create LOG.md entry before committing. Entry can be brief for incremental progress.
 
 ---
 
@@ -310,6 +247,27 @@ Context state is managed automatically by hooks — no manual file management ne
 **Session isolation:** Each Claude Code window has a unique session ID. Multiple windows can work on different projects without state conflicts.
 
 **Statusline:** Automatically reflects the current session's project state.
+
+### With Plan State
+
+If an active plan exists, check consistency:
+
+**1. Compare plan to session work:**
+- Read active plan file
+- Check if steps were completed based on LOG.md entries
+- Prompt to update plan if work was done
+
+**Output (if plan exists):**
+```
+## Plan State
+
+Plan: plans/2026-02-03-cache.md
+Status: active
+Criteria: SC-1, SC-2
+
+Session completed work on step 3.
+Update plan to mark step complete? [Y/n]
+```
 
 ---
 

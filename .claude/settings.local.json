@@ -63,7 +63,6 @@
       "Bash(docker run:*)",
       "Bash(docker image inspect:*)",
       "Bash(timeout:*)",
-      "Bash(.claude/docker/run-autonomous.sh:*)",
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
@@ -127,7 +126,41 @@
       "Bash(rustup override set:*)",
       "Bash(RUST_BACKTRACE=1 cargo +nightly test:*)",
       "Bash(rustup run nightly-2025-01-02 cargo test:*)",
-      "Bash(rustup run nightly-2025-07-01 cargo test:*)"
+      "Bash(rustup run nightly-2025-07-01 cargo test:*)",
+      "Bash(cargo +nightly-2025-07-01 test:*)",
+      "Bash(cargo +nightly-2025-07-01 build:*)",
+      "Bash(done)",
+      "Bash(cargo +nightly build:*)",
+      "Bash(rustup +nightly-2025-01-01 --version:*)",
+      "Bash(rustup +nightly-2024-12-01 --version:*)",
+      "Bash(cargo +nightly-2025-01-01 build:*)",
+      "Bash(cargo +nightly-2024-10-01 build:*)",
+      "Bash(cargo +nightly-2024-11-15 build:*)",
+      "Bash(cargo doc:*)",
+      "Bash(cargo expand:*)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir/crates/allir-stwo diff --stat)",
+      "Bash(RISC0_SKIP_BUILD_KERNELS=1 cargo test:*)",
+      "Bash(cargo +nightly test:*)",
+      "Bash(cargo +nightly check:*)",
+      "Bash(cargo +nightly update:*)",
+      "Bash(rustup run nightly-2024-01-01 rustc:*)",
+      "Bash(cargo +nightly-2024-01-01 update:*)",
+      "Bash(cargo +nightly-2024-01-01 check:*)",
+      "Bash(cargo +nightly-2024-10-01 update:*)",
+      "Bash(cargo +nightly-2024-10-01 check:*)",
+      "Bash(git checkout:*)",
+      "Bash(cargo update:*)",
+      "Bash(RUST_LOG=allir_stwo=debug cargo test:*)",
+      "Bash(rustfmt:*)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir diff HEAD -- crates/allir-stwo/src/stwo/components/upper.rs)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir status:*)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir/crates/allir-stwo diff src/stwo/components/jump.rs)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir/crates/allir-stwo diff src/stwo/components/branch.rs)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir diff -- crates/allir-stwo/src/stwo/components/branch.rs)",
+      "Bash(test:*)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir show 191b837:crates/allir-stwo/Cargo.toml)",
+      "Bash(bash -n:*)",
+      "Bash(/Users/cwgoes/Working/personal/claude-experiments/scripts/project-check.sh:*)"
     ]
   },
   "hooks": {
@@ -168,6 +201,14 @@
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/capture-project-context.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/periodic-reminder.sh"
+          }
+        ]
       }
     ],
     "PreToolUse": [
@@ -176,7 +217,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-commit.sh \"$TOOL_INPUT\""
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-commit-enforce.sh \"$TOOL_INPUT\""
           }
         ]
       }

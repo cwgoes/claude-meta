@@ -115,6 +115,29 @@ if [ -z "$TRACE_RAW" ] || [ "$TRACE_RAW" = "" ]; then
     TRACE_RAW="$OBJECTIVE"
 fi
 
+# Plan coverage and status display
+PLAN_DISPLAY=""
+if [ -d "$PROJECT_PATH/plans" ]; then
+    # Count plans by status
+    ACTIVE_COUNT=0
+    DONE_COUNT=0
+    for plan_file in "$PROJECT_PATH/plans/"*.md; do
+        if [ -f "$plan_file" ]; then
+            if grep -q "^status: active" "$plan_file" 2>/dev/null; then
+                ACTIVE_COUNT=$((ACTIVE_COUNT + 1))
+            elif grep -q "^status: done" "$plan_file" 2>/dev/null; then
+                DONE_COUNT=$((DONE_COUNT + 1))
+            fi
+        fi
+    done
+
+    if [ "$ACTIVE_COUNT" -gt 0 ]; then
+        PLAN_DISPLAY="${C_CYAN}→${ACTIVE_COUNT}active${C_RESET} "
+    elif [ "$DONE_COUNT" -gt 0 ]; then
+        PLAN_DISPLAY="${C_GREEN}✓${DONE_COUNT}done${C_RESET} "
+    fi
+fi
+
 # Extract just project name from path
 PROJECT_NAME=$(basename "$PROJECT")
 
@@ -149,15 +172,15 @@ fi
 # Format output based on status
 case "$STATUS" in
     active)
-        echo -e "${C_GRAY}[${C_RESET}${C_CYAN}${C_BOLD}${PROJECT_NAME}${C_RESET}${BRANCH_DISPLAY}${C_GRAY}]${C_RESET} ${TRACE_DISPLAY}${STALE_WARNING} ${METRICS}"
+        echo -e "${C_GRAY}[${C_RESET}${C_CYAN}${C_BOLD}${PROJECT_NAME}${C_RESET}${BRANCH_DISPLAY}${C_GRAY}]${C_RESET} ${PLAN_DISPLAY}${TRACE_DISPLAY}${STALE_WARNING} ${METRICS}"
         ;;
     paused)
-        echo -e "${C_GRAY}[${C_RESET}${C_CYAN}${C_BOLD}${PROJECT_NAME}${C_RESET}${BRANCH_DISPLAY}${C_GRAY}]${C_RESET} ${C_YELLOW}PAUSED${C_RESET}${STALE_WARNING} ${METRICS}"
+        echo -e "${C_GRAY}[${C_RESET}${C_CYAN}${C_BOLD}${PROJECT_NAME}${C_RESET}${BRANCH_DISPLAY}${C_GRAY}]${C_RESET} ${PLAN_DISPLAY}${C_YELLOW}PAUSED${C_RESET}${STALE_WARNING} ${METRICS}"
         ;;
     completed)
-        echo -e "${C_GRAY}[${C_RESET}${C_CYAN}${C_BOLD}${PROJECT_NAME}${C_RESET}${BRANCH_DISPLAY}${C_GRAY}]${C_RESET} ${C_GREEN}DONE${C_RESET} ${METRICS}"
+        echo -e "${C_GRAY}[${C_RESET}${C_CYAN}${C_BOLD}${PROJECT_NAME}${C_RESET}${BRANCH_DISPLAY}${C_GRAY}]${C_RESET} ${PLAN_DISPLAY}${C_GREEN}DONE${C_RESET} ${METRICS}"
         ;;
     *)
-        echo -e "${C_GRAY}[${C_RESET}${C_CYAN}${C_BOLD}${PROJECT_NAME}${C_RESET}${BRANCH_DISPLAY}${C_GRAY}]${C_RESET} ${TRACE_DISPLAY}${STALE_WARNING} ${METRICS}"
+        echo -e "${C_GRAY}[${C_RESET}${C_CYAN}${C_BOLD}${PROJECT_NAME}${C_RESET}${BRANCH_DISPLAY}${C_GRAY}]${C_RESET} ${PLAN_DISPLAY}${TRACE_DISPLAY}${STALE_WARNING} ${METRICS}"
         ;;
 esac

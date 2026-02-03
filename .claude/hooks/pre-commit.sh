@@ -22,11 +22,12 @@ if ! echo "$COMMAND" | grep -q "Co-Authored-By"; then
     echo "Reminder: Include 'Co-Authored-By: Claude <noreply@anthropic.com>'"
 fi
 
-# Check for Session: reference (full checkpoint indicator)
-if echo "$COMMAND" | grep -qE "Session:"; then
-    CHECKPOINT_TYPE="Full"
-else
-    CHECKPOINT_TYPE="Lightweight"
+# Check for Session: reference (required per CLAUDE.md Checkpoint Model)
+if ! echo "$COMMAND" | grep -qE "Session:"; then
+    echo ""
+    echo "=== Session Reference Check ==="
+    echo "Warning: No 'Session:' reference in commit message"
+    echo "Per CLAUDE.md, all commits should reference a LOG.md session"
 fi
 
 # === Verification Tier Check ===
@@ -75,7 +76,6 @@ if [ "$TIER" != "Trivial" ]; then
 
     echo ""
     echo "=== Verification Check ==="
-    echo "Checkpoint: $CHECKPOINT_TYPE"
     echo "Tier: $TIER ($CHANGED_FILES files, ~${CHANGED_LINES:-?} lines)"
 
     if [ -z "$VERIFICATION_FOUND" ]; then

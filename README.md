@@ -28,9 +28,10 @@ This workspace implements a **constitutional framework** for Claude agents defin
 |------|------|--------------|
 | **Ad-hoc** | Quick tasks, single session | Just git commits |
 | **Project** | Multi-session work | OBJECTIVE.md + LOG.md + learnings |
-| **Autonomous** | Unattended execution | Dedicated branch + checkpoints + async review |
 
 Start simple. Complexity is added only when needed.
+
+For unattended execution, use the external runner script (`scripts/run-until-complete.sh`) which calls Claude Code repeatedly until objectives are met.
 
 ## Directory Structure
 
@@ -58,9 +59,8 @@ Start simple. Complexity is added only when needed.
 | `/project-check` | Audit current project for issues |
 | `/commit` | Create verified commit |
 | `/session-end` | End session with memory capture |
-| `/autonomous <project>` | Launch unattended execution |
-| `/autonomous-review <project>` | Review autonomous results |
 | `/experiment <name>` | Create/enter git worktree for parallel work |
+| `/plan [description]` | Enter plan mode with context |
 | `/hypercontext` | Visualize session state |
 
 ## Key Features

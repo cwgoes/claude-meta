@@ -4,7 +4,6 @@ description: Manage git worktrees for parallel project work
 constitution: CLAUDE.md
 alignment:
   - Work Modes / Experiments
-  - Memory System / Repository Model
 ---
 
 # /experiment

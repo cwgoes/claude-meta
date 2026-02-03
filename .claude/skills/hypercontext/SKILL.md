@@ -5,8 +5,7 @@ version: 0.3
 status: documented
 constitution: CLAUDE.md
 alignment:
-  - Cognitive Architecture
-  - Context Persistence / Context Invariants
+  - Core Invariants / Context Invariant
 ---
 
 # Hypercontext — Spatial Context Awareness

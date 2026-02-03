@@ -4,11 +4,9 @@ description: Import an existing codebase into the project management framework b
 constitution: CLAUDE.md
 alignment:
   - Work Modes
-  - Memory System / Projects
-  - Memory System / Repository Model
-  - Traceability System
-  - Context Persistence / Context Invariants
-  - Context Persistence / State Externalization
+  - Project Hierarchy
+  - Core Invariants
+  - Checkpoint Model
 ---
 
 # /project-import
@@ -96,8 +94,8 @@ Present findings and ask user to clarify or confirm:
 
 **Inferred Success Criteria:**
 Based on existing tests and structure:
-- [ ] [inferred criterion 1]
-- [ ] [inferred criterion 2]
+- [ ] SC-1: [inferred criterion]
+- [ ] SC-2: [inferred criterion]
 
 **Questions:**
 
@@ -170,10 +168,28 @@ import_date: [YYYY-MM-DD]
 
 ## Success Criteria
 
-| Criterion | Status | Evidence |
-|-----------|--------|----------|
-| [SC-1] | [Pending/In Progress/Done] | [file/test/doc reference] |
-| [SC-2] | [status] | [evidence] |
+### SC-1: [Inferred/confirmed criterion - leaf]
+**Status:** [Pending/In Progress/Done]
+**Files:**
+- `[path]` — [role/purpose]
+**Verification:** [command or manual check]
+
+### SC-2: [Inferred/confirmed criterion - leaf]
+**Status:** [status]
+**Files:**
+- `[path]` — [role/purpose]
+**Verification:** [command or manual check]
+
+### SC-3: [Inferred/confirmed criterion - composite if files >80KB]
+**Status:** [status]
+**Subproject:** `[path/to/subproject]/`
+**Interface:**
+- **Inputs:** [what parent provides]
+- **Outputs:** [what subproject delivers]
+
+## Infrastructure
+*Files supporting multiple criteria or project-wide concerns.*
+- `[path]` — [purpose]
 
 ## Technology Stack
 
@@ -181,14 +197,6 @@ import_date: [YYYY-MM-DD]
 - **Framework:** [detected]
 - **Build:** [detected]
 - **Tests:** [detected]
-
-## Boundaries
-
-| Path | Scope | Notes |
-|------|-------|-------|
-| `src/` | Core implementation | [description] |
-| `tests/` | Test suite | [description] |
-| [other] | [scope] | [notes] |
 
 ## Current State
 
@@ -312,7 +320,8 @@ Imported existing codebase from `[original path]` into project management framew
 - [x] OBJECTIVE.md with success criteria
 - [x] LOG.md with import session
 - [x] Git repository present
-- [x] Context budget: [Z KB] / 80KB
+- [x] Context budget: All leaf criteria ≤80KB
+- [x] Criteria classified: [N leaf, M composite]
 
 ## Recommendations
 

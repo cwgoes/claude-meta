@@ -10,12 +10,10 @@ Per CLAUDE.md, work scales based on **uncertainty** and **duration**, not comple
 |------|------|-----------|-----|
 | **Ad-hoc** | Clear task, single session | None | Working context (not workspace) |
 | **Project** | Multi-session, decisions worth recording | OBJECTIVE.md + LOG.md | Own repository |
-| **Autonomous** | Unattended execution (explicit invocation only) | Project + AUTONOMOUS-LOG.md | Dedicated branch |
 
 **Mode selection:**
 - Start Ad-hoc for bounded tasks
 - Upgrade to Project when scope expands, decisions need recording, or session ends incomplete
-- Autonomous only on explicit `/autonomous` invocation — never auto-selected
 
 **Graduation is automatic with notification.** Once a project exists, maintain it.
 
@@ -43,6 +41,37 @@ workspace/                    # May be git repo for metadata
 - **Project repos** hold all tracked work with OBJECTIVE.md + LOG.md + LEARNINGS.md
 - **Subprojects** are subdirectories or submodules within a project repo
 
+## Hierarchical Verification Model
+
+Per CLAUDE.md, the objective hierarchy IS the verification structure:
+
+| Criterion Type | Definition | Verification |
+|----------------|------------|--------------|
+| **Leaf** | Files total ≤80KB | Claude verifies directly |
+| **Composite** | Files >80KB | Decomposed into subproject with child criteria |
+
+**Key invariants:**
+- **Context Budget:** Leaf criterion files must total ≤80KB
+- **Composition:** Composite criteria pass only if all children pass AND compose correctly
+- **Coverage:** Every source file maps to exactly one criterion
+
+**Decomposition:**
+1. Parent criterion declares `**Subproject:** path/to/subproject/`
+2. Subproject OBJECTIVE.md declares `parent_criterion: SC-N` in frontmatter
+3. Child criteria must each fit in context (or recurse)
+4. Parent passes ⟺ all children pass AND compose to implement parent
+
+**Verification flow:**
+```
+verify(objective):
+  for each criterion:
+    if leaf (files ≤ 80KB):
+      Claude: "Do these files implement this criterion?"
+    if composite (has subproject):
+      verify(subproject)  # recursive
+      Claude: "Do child criteria compose to implement parent?"
+```
+
 ## Constitutional Hierarchy
 
 ```
@@ -53,8 +82,7 @@ CLAUDE.md                    # Constitution (root authority)
 │   │   ├── plan.md
 │   │   ├── implement.md
 │   │   ├── verify.md
-│   │   ├── research.md
-│   │   └── autonomous.md    # Unattended execution agent
+│   │   └── research.md
 │   ├── skills/              # Derived skills (all reference constitution)
 │   │   ├── project-start/   # Orient on project to begin working
 │   │   ├── project-create/  # Create new project
@@ -62,14 +90,11 @@ CLAUDE.md                    # Constitution (root authority)
 │   │   ├── session-end/     # End session with memory capture
 │   │   ├── commit/          # Create commit with verification awareness
 │   │   ├── hypercontext/    # Context visualization
-│   │   ├── autonomous/      # Launch autonomous execution
-│   │   └── autonomous-review/ # Review and act on autonomous results
+│   │   ├── experiment/      # Git worktree experiments
+│   │   └── plan/            # Enter plan mode with context
 │   ├── hooks/               # Constitutional enforcement hooks
 │   │   ├── session-start.sh # Outputs workspace context
 │   │   └── pre-commit.sh    # Commit message format reminder
-│   ├── docker/              # Container definitions for isolation
-│   │   ├── autonomous.Dockerfile
-│   │   └── run-autonomous.sh
 │   └── settings.local.json  # Permissions + hooks configuration
 └── LEARNINGS.md             # Workspace-level learnings repository
 ```
@@ -107,7 +132,8 @@ Constitutional enforcement via Claude Code hooks:
 | `post-compact-reload.sh` | SessionStart (compact) | Restores context after compression |
 | `pre-compact-save.sh` | PreCompact | Saves context before compression |
 | `capture-project-context.sh` | PostToolUse (Read) | Captures project state when OBJECTIVE.md is read |
-| `pre-commit.sh` | PreToolUse (Bash) | Reminds about commit message format requirements |
+| `periodic-reminder.sh` | PostToolUse | Reminds to re-read OBJECTIVE.md every 15 tool calls |
+| `pre-commit-enforce.sh` | PreToolUse (Bash) | BLOCKS commits without LOG.md entry or evidence |
 
 ### Session Start Behavior
 
@@ -179,59 +205,18 @@ All skills include constitutional headers with alignment declarations.
 | **session-end** | End session with appropriate memory capture | `/session-end [quick\|full]` |
 | **commit** | Create commit with verification tier awareness | `/commit [message]` |
 | **hypercontext** | Visualize session context as ASCII map | `/hypercontext` |
-| **autonomous** | Launch unattended execution with time budget | `/autonomous <project> [--budget <time>]` |
-| **autonomous-review** | Review results and act (approve/rollback/direct) | `/autonomous-review <project>` |
+| **experiment** | Git worktree for parallel work | `/experiment <name>` |
+| **plan** | Enter plan mode with project context | `/plan [description]` |
 
-## Autonomous Mode
+## Unattended Execution
 
-Autonomous mode enables unattended execution with full traceability for async review. See CLAUDE.md "Autonomous Execution" section for full specification.
+For unattended/autonomous execution, use an external runner script that calls Claude Code repeatedly until objectives are met. See `scripts/run-until-complete.sh`.
 
-### Quick Start
-
-```bash
-# Launch autonomous execution (2h default budget)
-/autonomous my-project
-
-# Launch with custom budget
-/autonomous my-project --budget 4h
-
-# Review results
-/autonomous-review my-project
-```
-
-### Requirements
-
-- Project must have OBJECTIVE.md with verifiable success criteria
-- Docker must be available (autonomous mode runs in isolated container)
-
-### How It Works
-
-1. **Launch:** `/autonomous` creates branch `auto/<project>-<timestamp>`
-2. **Execute:** Claude works toward OBJECTIVE.md success criteria
-3. **Checkpoint:** Tags created at decisions, discoveries, reversals
-4. **Terminate:** On success, budget exhaustion, or uncertainty
-5. **Review:** `/autonomous-review` to approve, rollback, or direct
-
-### Artifacts
-
-| File | Purpose |
-|------|---------|
-| `AUTONOMOUS-LOG.md` | Structured decision log for async review |
-| `session-<timestamp>.jsonl` | Full execution trace |
-| `DIRECTION.md` | User guidance for resumed runs |
-| `checkpoint-NNN` tags | Rollback points |
-
-### Docker Setup
-
-Build the autonomous container:
-```bash
-docker build -t claude-autonomous -f .claude/docker/autonomous.Dockerfile .
-```
-
-Or use the wrapper script:
-```bash
-.claude/docker/run-autonomous.sh my-project --budget 2h
-```
+This approach:
+- Uses standard project structure (OBJECTIVE.md + LOG.md)
+- Works with any permission configuration
+- Provides full traceability via normal checkpoints
+- Allows iteration control externally
 
 ## Adding New Agents/Skills
 

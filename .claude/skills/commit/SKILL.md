@@ -3,10 +3,9 @@ name: commit
 description: Create a git commit with proper verification and message format
 constitution: CLAUDE.md
 alignment:
-  - Traceability System / Checkpoint Model
-  - Traceability System / Commit Message Format
-  - Verification System / Verification Tiers
-  - Verification System / Verification Gates
+  - Checkpoint Model
+  - Verification Tiers
+  - Core Invariants / Evidence Invariant
 ---
 
 # /commit
@@ -17,11 +16,11 @@ Create a properly formatted git commit with verification tier awareness.
 
 ```
 /commit [message]
-/commit --full [message]
 ```
 
 - `message` — Optional commit message summary. If omitted, will be inferred from staged changes.
-- `--full` — Force full checkpoint (LOG.md entry required)
+
+**Note:** All commits require a LOG.md entry (created before the commit). The entry can be brief for incremental progress.
 
 ## Protocol
 
@@ -49,7 +48,7 @@ Determine:
 
 **Trivial tier:**
 - Verification: `git diff --cached` inspection
-- No LOG.md record required
+- LOG.md entry required (can be brief)
 
 **Standard tier:**
 - Check LOG.md for recent verification record
@@ -59,25 +58,14 @@ Determine:
 - Require verification record in LOG.md
 - Require explicit user confirmation
 
-### 4. Determine Checkpoint Level
+### 4. Ensure LOG.md Entry Exists
 
-| Indicator | Level |
-|-----------|-------|
-| `--full` flag | Full |
-| Significant decision made | Full (ask user) |
-| Session boundary | Full |
-| Otherwise | Lightweight |
+Before committing, verify LOG.md has an entry for this work:
+- If no entry exists, create one (can be brief for incremental progress)
+- Entry must be saved before git commit so it's included in the commit
 
 ### 5. Compose Commit Message
 
-**Lightweight format:**
-```
-[type]: [summary]
-
-Co-Authored-By: Claude <noreply@anthropic.com>
-```
-
-**Full format:**
 ```
 [type]: [summary]
 
@@ -113,12 +101,9 @@ EOF
 
 - Hash: [short hash]
 - Tier: [Trivial|Standard|Critical]
-- Checkpoint: [Lightweight|Full]
 - Files: [count]
 - Message: [summary]
-
-[If full checkpoint]
-Session logged in LOG.md: [session reference]
+- Session: [LOG.md session reference]
 ```
 
 ## Verification Record Format
@@ -170,12 +155,14 @@ If full checkpoint, ensure LOG.md has session entry:
 ```
 User: /commit fix typo in README
 
-Claude: ## Commit Created
+Claude: Adding LOG.md entry...
+
+## Commit Created
 - Hash: abc123f
 - Tier: Trivial
-- Checkpoint: Lightweight
 - Files: 1
 - Message: docs: fix typo in README
+- Session: 2024-01-31 10:00 — Typo fix
 ```
 
 ### Multi-file commit (standard tier)
@@ -195,23 +182,20 @@ Standard tier requires verification. Options:
 
 User: 1
 
-Claude: [Guides through verification record, then commits]
+Claude: [Guides through verification record, creates LOG.md entry, then commits]
 ```
 
-### Full checkpoint
+### Significant work commit
 ```
-User: /commit --full implemented user authentication
+User: /commit implemented user authentication
 
-Claude: ## Full Checkpoint
-
-Adding LOG.md session entry...
-[Creates or appends session entry]
+Claude: Adding LOG.md session entry...
 
 ## Commit Created
 - Hash: def456a
 - Tier: Critical
-- Checkpoint: Full
 - Files: 5
+- Message: feat: implemented user authentication
 - Session: 2024-01-31 14:30 — User authentication implementation
 ```
 

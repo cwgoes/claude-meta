@@ -141,12 +141,11 @@ fi
 # --- 5. Critical Learnings (project-level) ---
 LEARNINGS_FILE="$PROJECT_DIR/LEARNINGS.md"
 if [ -f "$LEARNINGS_FILE" ]; then
-    # Count failure patterns (most critical to remember)
-    FAIL_COUNT=$(grep -c "^### \[FP-" "$LEARNINGS_FILE" 2>/dev/null || echo "0")
-    if [ "$FAIL_COUNT" -gt 0 ]; then
-        echo "## Failure Patterns ($FAIL_COUNT recorded)"
-        # Show titles of failure patterns
-        grep "^### \[FP-" "$LEARNINGS_FILE" | head -5
+    # Count Avoid entries (most critical to remember)
+    AVOID_COUNT=$(grep -c "^### Avoid:" "$LEARNINGS_FILE" 2>/dev/null || echo "0")
+    if [ "$AVOID_COUNT" -gt 0 ]; then
+        echo "## Avoid ($AVOID_COUNT recorded)"
+        grep "^### Avoid:" "$LEARNINGS_FILE" | head -5
         echo ""
     fi
 fi
