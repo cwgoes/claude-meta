@@ -160,7 +160,22 @@
       "Bash(test:*)",
       "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir show 191b837:crates/allir-stwo/Cargo.toml)",
       "Bash(bash -n:*)",
-      "Bash(/Users/cwgoes/Working/personal/claude-experiments/scripts/project-check.sh:*)"
+      "Bash(/Users/cwgoes/Working/personal/claude-experiments/scripts/project-check.sh:*)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments status)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments diff README.md)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments log --oneline -5)",
+      "Bash(./test.sh:*)",
+      "Bash(echo:*)",
+      "Bash(RUSTFLAGS=\"--print cfg\" cargo build:*)",
+      "Bash(RUSTFLAGS=\"-C target-feature=+simd128\" rustc:*)",
+      "Bash(RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build:*)",
+      "Bash(xxd:*)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir diff -- crates/allir-stwo/src/stwo/air.rs)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments diff --stat HEAD)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments diff CLAUDE.md)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments diff .claude/settings.local.json)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments diff .claude/skills/project-check/SKILL.md)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments add CLAUDE.md .claude/settings.local.json .claude/skills/project-check/SKILL.md scripts/project-check.sh)"
     ]
   },
   "hooks": {

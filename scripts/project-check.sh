@@ -54,7 +54,10 @@ if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
     echo "  --no-skeptical        Skip multi-pass skeptical verification"
     echo "  --no-criterion-tests  Skip per-criterion test verification"
     echo "  --no-benchmarks       Skip benchmark threshold verification"
-    echo "  --skeptical-passes N  Number of skeptical passes (default: 2)"
+    echo "  --no-doc-audit        Skip benchmark documentation audit"
+    echo "  --allow-unverified    Allow PASS when verification infrastructure unavailable"
+    echo "  --regression-threshold N  Regression threshold percent (default: 20)"
+    echo "  --skeptical-passes N  Number of skeptical passes (default: 3)"
     echo "  --verbose             Show detailed output"
     echo "  --json                Output results as JSON"
     exit 0
@@ -71,7 +74,10 @@ SKIP_SUBPROJECTS=false
 SKIP_SKEPTICAL=false
 SKIP_CRITERION_TESTS=false
 SKIP_BENCHMARKS=false
-SKEPTICAL_PASSES=2
+SKIP_DOC_AUDIT=false
+SKEPTICAL_PASSES=3
+REGRESSION_THRESHOLD=20
+ALLOW_UNVERIFIED=false
 VERBOSE=false
 JSON_OUTPUT=false
 
@@ -85,9 +91,16 @@ while [[ $# -gt 0 ]]; do
         --no-skeptical) SKIP_SKEPTICAL=true; shift ;;
         --no-criterion-tests) SKIP_CRITERION_TESTS=true; shift ;;
         --no-benchmarks) SKIP_BENCHMARKS=true; shift ;;
+        --no-doc-audit) SKIP_DOC_AUDIT=true; shift ;;
+        --allow-unverified) ALLOW_UNVERIFIED=true; shift ;;
         --skeptical-passes)
             shift
-            SKEPTICAL_PASSES="${1:-2}"
+            SKEPTICAL_PASSES="${1:-3}"
+            shift
+            ;;
+        --regression-threshold)
+            shift
+            REGRESSION_THRESHOLD="${1:-20}"
             shift
             ;;
         --verbose) VERBOSE=true; shift ;;
@@ -104,7 +117,10 @@ while [[ $# -gt 0 ]]; do
             echo "  --no-skeptical        Skip multi-pass skeptical verification"
             echo "  --no-criterion-tests  Skip per-criterion test verification"
             echo "  --no-benchmarks       Skip benchmark threshold verification"
-            echo "  --skeptical-passes N  Number of skeptical passes (default: 2)"
+            echo "  --no-doc-audit        Skip benchmark documentation audit"
+            echo "  --allow-unverified    Allow PASS when verification infrastructure unavailable"
+            echo "  --regression-threshold N  Regression threshold percent (default: 20)"
+            echo "  --skeptical-passes N  Number of skeptical passes (default: 3)"
             echo "  --verbose             Show detailed output"
             echo "  --json                Output results as JSON"
             exit 0
@@ -156,6 +172,8 @@ declare -A CRITERIA_SUBPROJECT=() # SC-N -> subproject path (if composite)
 declare -A CRITERIA_FILES=()     # SC-N -> comma-separated files
 declare -A CRITERIA_TESTS=()     # SC-N -> test command | test files
 declare -A CRITERIA_BENCHMARKS=() # SC-N -> benchmark command | thresholds
+declare -A CRITERIA_STATUS=()     # SC-N -> status text (Done, In Progress, etc.)
+declare -A CRITERIA_TEST_RESULT=() # SC-N -> PASS|FAIL|NO_TESTS|SKIPPED
 
 log() {
     if $VERBOSE || [[ "${2:-}" == "always" ]]; then
@@ -242,6 +260,7 @@ phase2_parse_criteria() {
     local subproject_for_sc=""
     local tests_for_sc=""
     local benchmark_for_sc=""
+    local status_for_sc=""
 
     > "$criteria_file"
     > "$infrastructure_file"
@@ -256,12 +275,14 @@ phase2_parse_criteria() {
                 CRITERIA_SUBPROJECT["$current_sc"]="$subproject_for_sc"
                 CRITERIA_TESTS["$current_sc"]="$tests_for_sc"
                 CRITERIA_BENCHMARKS["$current_sc"]="$benchmark_for_sc"
+                CRITERIA_STATUS["$current_sc"]="$status_for_sc"
             fi
             current_sc="${BASH_REMATCH[1]}"
             files_for_sc=""
             subproject_for_sc=""
             tests_for_sc=""
             benchmark_for_sc=""
+            status_for_sc=""
             in_files=false
 
         # Detect Files: section
@@ -285,6 +306,10 @@ phase2_parse_criteria() {
             # Strip backticks if present
             benchmark_for_sc="${benchmark_for_sc//\`/}"
 
+        # Detect Status: field
+        elif [[ "$line" =~ ^\*\*Status:\*\*[[:space:]]*(.*) ]]; then
+            status_for_sc="${BASH_REMATCH[1]}"
+
         # Detect end of Files section
         elif [[ "$line" =~ ^\*\*[A-Z] ]] && [[ ! "$line" =~ ^\*\*Files ]] && [[ ! "$line" =~ ^\*\*Tests ]] && [[ ! "$line" =~ ^\*\*Benchmark ]]; then
             in_files=false
@@ -298,11 +323,13 @@ phase2_parse_criteria() {
                 CRITERIA_SUBPROJECT["$current_sc"]="$subproject_for_sc"
                 CRITERIA_TESTS["$current_sc"]="$tests_for_sc"
                 CRITERIA_BENCHMARKS["$current_sc"]="$benchmark_for_sc"
+                CRITERIA_STATUS["$current_sc"]="$status_for_sc"
                 current_sc=""
                 files_for_sc=""
                 subproject_for_sc=""
                 tests_for_sc=""
                 benchmark_for_sc=""
+                status_for_sc=""
             fi
             in_files=true
 
@@ -329,6 +356,7 @@ phase2_parse_criteria() {
         CRITERIA_SUBPROJECT["$current_sc"]="$subproject_for_sc"
         CRITERIA_TESTS["$current_sc"]="$tests_for_sc"
         CRITERIA_BENCHMARKS["$current_sc"]="$benchmark_for_sc"
+        CRITERIA_STATUS["$current_sc"]="$status_for_sc"
     fi
 
     # Report findings
@@ -432,22 +460,137 @@ phase3_classify_criteria() {
 }
 
 # ============================================
-# Phase 4: Leaf Verification (bounded Claude calls)
+# Phase 4: Deterministic Evidence (hard gate)
 # ============================================
+# Tests run FIRST. Results gate semantic verification in Phase 4.5.
+# Done criteria without tests are violations (Evidence Invariant).
 
-phase4_leaf_verification() {
-    if $STRUCTURE_ONLY; then
-        log "=== Phase 4: Leaf Verification (SKIPPED) ===" "always"
+phase4_deterministic_evidence() {
+    if $STRUCTURE_ONLY || $SKIP_CRITERION_TESTS; then
+        log "=== Phase 4: Deterministic Evidence (SKIPPED) ===" "always"
         log ""
         return 0
     fi
 
-    log "=== Phase 4: Leaf Verification ===" "always"
+    log "=== Phase 4: Deterministic Evidence ===" "always"
 
-    # Check if claude CLI is available
+    local criteria_file="$CHECK_DIR/criteria.txt"
+    local tests_run=0
+    local tests_passed=0
+    local tests_failed=0
+    local evidence_violations=0
+
+    while IFS='|' read -r sc files subproject tests benchmark; do
+        [[ -z "$sc" ]] && continue
+
+        # Only check leaf criteria
+        if [[ "${CRITERIA_TYPE[$sc]:-}" != "leaf" ]]; then
+            CRITERIA_TEST_RESULT["$sc"]="SKIPPED"
+            continue
+        fi
+
+        local status="${CRITERIA_STATUS[$sc]:-}"
+        local status_lower
+        status_lower=$(echo "$status" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+
+        # Evidence gate: Done criteria MUST have tests
+        if [[ -z "$tests" ]]; then
+            CRITERIA_TEST_RESULT["$sc"]="NO_TESTS"
+            if [[ "$status_lower" == *"done"* ]] || [[ "$status_lower" == *"complete"* ]] || [[ "$status" == *"✅"* ]]; then
+                ((evidence_violations++))
+                log_fail "EVIDENCE: $sc marked Done but has no **Tests:** field — deterministic evidence required"
+            else
+                log "  $sc: No tests defined (status: ${status:-unset})"
+            fi
+            continue
+        fi
+
+        # Parse test field: "command | test_files" or just "command"
+        local test_command=""
+        local test_files=""
+
+        if [[ "$tests" == *"|"* ]]; then
+            test_command="${tests%%|*}"
+            test_files="${tests#*|}"
+            test_command="${test_command## }"
+            test_command="${test_command%% }"
+            test_files="${test_files## }"
+            test_files="${test_files%% }"
+        else
+            test_command="$tests"
+        fi
+
+        # Verify test file(s) exist if specified
+        if [[ -n "$test_files" ]]; then
+            local missing_test_files=""
+            IFS=',' read -ra TEST_FILE_ARRAY <<< "${test_files//|/,}"
+            for test_file in "${TEST_FILE_ARRAY[@]}"; do
+                test_file="${test_file## }"
+                test_file="${test_file%% }"
+                [[ -z "$test_file" ]] && continue
+                local full_test_path="$FULL_PROJECT_DIR/$test_file"
+                if [[ ! -f "$full_test_path" ]]; then
+                    missing_test_files+="$test_file "
+                fi
+            done
+
+            if [[ -n "$missing_test_files" ]]; then
+                log_warn "$sc: Test file(s) missing: $missing_test_files"
+            fi
+        fi
+
+        # Run test command
+        if [[ -n "$test_command" ]]; then
+            ((tests_run++))
+            log "  $sc: Running tests..."
+
+            local test_log="$CHECK_DIR/$sc-tests.log"
+            if (cd "$FULL_PROJECT_DIR" && eval "$test_command" > "$test_log" 2>&1); then
+                ((tests_passed++))
+                CRITERIA_TEST_RESULT["$sc"]="PASS"
+                log_pass "$sc: Tests passed"
+            else
+                local exit_code=$?
+                ((tests_failed++))
+                CRITERIA_TEST_RESULT["$sc"]="FAIL"
+                log_fail "CRITERION_TEST: $sc tests failed (exit $exit_code)"
+                log "    See: $test_log"
+            fi
+        fi
+
+    done < "$criteria_file"
+
+    if [[ $tests_run -eq 0 && $evidence_violations -eq 0 ]]; then
+        log "  No criterion-level tests defined"
+    else
+        log "  Tests: $tests_passed/$tests_run passed, $evidence_violations evidence violation(s)"
+    fi
+
+    log ""
+}
+
+# ============================================
+# Phase 4.5: Semantic Verification (gated, fail-closed)
+# ============================================
+# Gated by Phase 4 test results. Fail-closed on infrastructure errors.
+# Much more skeptical: hostile auditor, burden reversal, minimal counterexample.
+
+phase4_5_semantic_verification() {
+    if $STRUCTURE_ONLY; then
+        log "=== Phase 4.5: Semantic Verification (SKIPPED) ===" "always"
+        log ""
+        return 0
+    fi
+
+    log "=== Phase 4.5: Semantic Verification ===" "always"
+
+    # Fail-closed: Claude CLI is REQUIRED unless --allow-unverified
     if ! command -v claude &> /dev/null; then
-        log_warn "claude CLI not found - skipping semantic verification"
-        log "  Install: npm install -g @anthropic-ai/claude-code"
+        if $ALLOW_UNVERIFIED; then
+            log_warn "claude CLI not found — semantic verification skipped (--allow-unverified)"
+        else
+            log_fail "INFRA: claude CLI required for semantic verification (use --allow-unverified to skip)"
+        fi
         log ""
         return 0
     fi
@@ -463,6 +606,13 @@ phase4_leaf_verification() {
         fi
 
         [[ -z "$files" ]] && continue
+
+        # Gate: if tests failed, criterion is NOT_MET — skip expensive Claude call
+        local test_result="${CRITERIA_TEST_RESULT[$sc]:-NO_TESTS}"
+        if [[ "$test_result" == "FAIL" ]]; then
+            log_fail "CONTENT: $sc — tests failed, criterion is NOT_MET"
+            continue
+        fi
 
         log "Verifying $sc..." "always"
 
@@ -526,10 +676,22 @@ $(cat "$full_path")
         fi
 
         # Extract criterion description
-        local sc_line=$(grep -E "^### $sc:" "$FULL_PROJECT_DIR/OBJECTIVE.md" || echo "$sc: (description not found)")
+        local sc_line
+        sc_line=$(grep -E "^### $sc:" "$FULL_PROJECT_DIR/OBJECTIVE.md" || echo "$sc: (description not found)")
 
-        # Bounded verification prompt
-        local verify_prompt="You are verifying a single success criterion. Be thorough but focused.
+        # Determine evidence cap based on test results
+        local evidence_cap="MET"
+        if [[ "$test_result" == "NO_TESTS" ]]; then
+            local status="${CRITERIA_STATUS[$sc]:-}"
+            local status_lower
+            status_lower=$(echo "$status" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+            if [[ "$status_lower" == *"done"* ]] || [[ "$status_lower" == *"complete"* ]] || [[ "$status" == *"✅"* ]]; then
+                evidence_cap="PARTIAL"  # No tests + Done → capped
+            fi
+        fi
+
+        # Pass 1: Bounded verification prompt (skeptical framing)
+        local verify_prompt="You are verifying a single success criterion. Be thorough and skeptical — do not give the benefit of the doubt. Require positive evidence for every aspect of the criterion.
 
 ## Criterion
 $sc_line
@@ -540,9 +702,10 @@ $file_contents
 ## Task
 
 1. Read each file completely
-2. Determine if the code actually implements the criterion
-3. Identify specific evidence (function names, logic, file:line)
-4. Note any gaps or incomplete implementation
+2. Determine if the code FULLY implements the criterion — not approximately, but completely
+3. Identify specific evidence (function names, logic, file:line) for each aspect
+4. If ANY aspect of the criterion is not demonstrably implemented, the status is PARTIAL or NOT_MET
+5. Do not infer implementation from naming or structure — verify logic
 
 ## Output Format (JSON only, no markdown)
 
@@ -558,26 +721,62 @@ $file_contents
 
         local result_file="$CHECK_DIR/$sc.json"
 
-        # Run bounded verification (Pass 1)
-        if claude --dangerously-skip-permissions -p "$verify_prompt" > "$result_file" 2>&1; then
-            # Extract JSON from response
-            local json_content=$(grep -A 1000 '{' "$result_file" | grep -B 1000 '}' | head -n -0 || cat "$result_file")
-            echo "$json_content" > "$result_file.clean"
+        # Run bounded verification — fail-closed on error
+        if ! claude --dangerously-skip-permissions -p "$verify_prompt" > "$result_file" 2>&1; then
+            if $ALLOW_UNVERIFIED; then
+                log_warn "$sc: Verification failed (claude error) — allowed by --allow-unverified"
+            else
+                log_fail "VERIFY: $sc — claude verification failed (non-zero exit)"
+            fi
+            continue
+        fi
 
-            local status=$(jq -r '.status // "UNKNOWN"' "$result_file.clean" 2>/dev/null || echo "PARSE_ERROR")
-            local confidence=$(jq -r '.confidence // "UNKNOWN"' "$result_file.clean" 2>/dev/null || echo "UNKNOWN")
-            local final_status="$status"
-            local skeptical_gaps=""
+        # Extract JSON — fail-closed on parse error
+        local json_content
+        json_content=$(sed -n '/^{/,/^}/p' "$result_file" | head -100)
+        if [[ -z "$json_content" ]]; then
+            json_content=$(grep -A 1000 '{' "$result_file" | grep -B 1000 '}' || true)
+        fi
 
-            # Multi-pass skeptical verification (only if Pass 1 = MET and skeptical enabled)
-            if [[ "$status" == "MET" ]] && ! $SKIP_SKEPTICAL && [[ $SKEPTICAL_PASSES -gt 0 ]]; then
-                log "  Running skeptical verification ($SKEPTICAL_PASSES passes)..."
+        if [[ -z "$json_content" ]]; then
+            if $ALLOW_UNVERIFIED; then
+                log_warn "$sc: Could not parse verification output — allowed by --allow-unverified"
+            else
+                log_fail "PARSE: $sc — verification produced unparseable output"
+            fi
+            continue
+        fi
 
-                local significant_gaps_found=false
+        echo "$json_content" > "$result_file.clean"
 
-                # Pass 2: Adversarial review
-                if [[ $SKEPTICAL_PASSES -ge 1 ]]; then
-                    local adversarial_prompt="You are a skeptical code reviewer. Your task is to find reasons this code does NOT fully implement the criterion. Be adversarial but fair.
+        local status
+        status=$(jq -r '.status // "UNKNOWN"' "$result_file.clean" 2>/dev/null || echo "PARSE_ERROR")
+        local confidence
+        confidence=$(jq -r '.confidence // "UNKNOWN"' "$result_file.clean" 2>/dev/null || echo "UNKNOWN")
+
+        if [[ "$status" == "PARSE_ERROR" ]] || [[ "$status" == "UNKNOWN" ]]; then
+            if $ALLOW_UNVERIFIED; then
+                log_warn "$sc: Verification status unparseable — allowed by --allow-unverified"
+            else
+                log_fail "PARSE: $sc — verification returned unparseable status"
+            fi
+            continue
+        fi
+
+        local final_status="$status"
+        local skeptical_gaps=""
+
+        # Multi-pass skeptical verification (only if Pass 1 = MET and skeptical enabled)
+        if [[ "$status" == "MET" ]] && ! $SKIP_SKEPTICAL && [[ $SKEPTICAL_PASSES -gt 0 ]]; then
+            log "  Running skeptical verification ($SKEPTICAL_PASSES passes)..."
+
+            local significant_gaps_found=false
+
+            # Pass 2: Hostile auditor
+            if [[ $SKEPTICAL_PASSES -ge 1 ]]; then
+                local adversarial_prompt="You are a hostile code auditor. Your professional reputation depends on finding real deficiencies. False negatives (missed flaws) are career-ending. False positives merely require retraction.
+
+Find specific, concrete ways this implementation FAILS to satisfy the criterion. Do NOT hedge. Do NOT soften language. Either the flaw exists or it does not.
 
 ## Criterion
 $sc_line
@@ -586,36 +785,55 @@ $sc_line
 $file_contents
 
 ## Task
-Find specific ways this implementation is incomplete, incorrect, or doesn't meet the criterion. Look for:
-1. Missing edge cases
-2. Incorrect logic
-3. Unhandled scenarios
-4. Requirements not addressed
+For each flaw found:
+1. Cite the exact file:line
+2. State what the criterion requires at that point
+3. State what the code actually does (or fails to do)
+4. Rate severity: CRITICAL (criterion not met) | SIGNIFICANT (partial gap) | MINOR (cosmetic)
 
-If the implementation is actually complete, say so. But err on the side of finding issues.
+If after exhaustive review you genuinely find no flaws, state: \"No significant deficiencies found\" — but only if this is true under oath.
 
 ## Output Format (JSON only)
 {
-  \"significant_gaps\": [\"list of significant gaps found, or empty if none\"],
-  \"minor_issues\": [\"list of minor issues\"],
+  \"significant_gaps\": [\"CRITICAL/SIGNIFICANT gaps with file:line references\"],
+  \"minor_issues\": [\"MINOR issues\"],
   \"verdict\": \"GAPS_FOUND\" | \"NO_SIGNIFICANT_GAPS\"
 }"
 
-                    local adversarial_file="$CHECK_DIR/$sc-adversarial.json"
-                    if claude --dangerously-skip-permissions -p "$adversarial_prompt" > "$adversarial_file" 2>&1; then
-                        local adv_json=$(grep -A 1000 '{' "$adversarial_file" | grep -B 1000 '}' | head -n -0 || cat "$adversarial_file")
+                local adversarial_file="$CHECK_DIR/$sc-adversarial.json"
+                if claude --dangerously-skip-permissions -p "$adversarial_prompt" > "$adversarial_file" 2>&1; then
+                    local adv_json
+                    adv_json=$(sed -n '/^{/,/^}/p' "$adversarial_file" | head -100)
+                    if [[ -z "$adv_json" ]]; then
+                        adv_json=$(grep -A 1000 '{' "$adversarial_file" | grep -B 1000 '}' || true)
+                    fi
+                    if [[ -n "$adv_json" ]]; then
                         echo "$adv_json" > "$adversarial_file.clean"
-                        local adv_verdict=$(jq -r '.verdict // "UNKNOWN"' "$adversarial_file.clean" 2>/dev/null || echo "UNKNOWN")
+                        local adv_verdict
+                        adv_verdict=$(jq -r '.verdict // "UNKNOWN"' "$adversarial_file.clean" 2>/dev/null || echo "UNKNOWN")
                         if [[ "$adv_verdict" == "GAPS_FOUND" ]]; then
                             significant_gaps_found=true
                             skeptical_gaps=$(jq -r '.significant_gaps[0] // "unspecified"' "$adversarial_file.clean" 2>/dev/null)
+                            log "    Pass 2 (hostile auditor): GAPS FOUND"
+                        else
+                            log "    Pass 2 (hostile auditor): no significant gaps"
                         fi
+                    else
+                        # Parse failure in skeptical pass — fail-closed
+                        significant_gaps_found=true
+                        skeptical_gaps="pass 2 output unparseable (fail-closed)"
+                        log "    Pass 2 (hostile auditor): UNPARSEABLE — fail-closed, gaps assumed"
                     fi
+                else
+                    significant_gaps_found=true
+                    skeptical_gaps="pass 2 claude call failed (fail-closed)"
+                    log "    Pass 2 (hostile auditor): FAILED — fail-closed, gaps assumed"
                 fi
+            fi
 
-                # Pass 3: Edge case review
-                if [[ $SKEPTICAL_PASSES -ge 2 ]] && ! $significant_gaps_found; then
-                    local edge_prompt="You are reviewing code for edge cases and error handling.
+            # Pass 3: Burden of proof reversal
+            if [[ $SKEPTICAL_PASSES -ge 2 ]]; then
+                local reversal_prompt="Apply REVERSE burden of proof. This criterion is NOT MET until you prove otherwise with irrefutable code evidence.
 
 ## Criterion
 $sc_line
@@ -624,147 +842,153 @@ $sc_line
 $file_contents
 
 ## Task
-Identify:
-1. Edge cases not handled
-2. Error conditions not covered
-3. Requirements not fully addressed
-4. Boundary conditions that might fail
+1. List every specific requirement implied by the criterion
+2. For EACH requirement, find the exact code (file:line) that satisfies it
+3. If you cannot cite concrete code for a requirement, mark it ABSENT
+4. Do not infer or assume — cite exact code or mark ABSENT
+5. A single ABSENT requirement means the criterion is not fully met
 
 ## Output Format (JSON only)
 {
-  \"unhandled_edge_cases\": [\"list of unhandled edge cases\"],
-  \"missing_error_handling\": [\"list of missing error handling\"],
-  \"unaddressed_requirements\": [\"list of unaddressed requirements\"],
-  \"verdict\": \"ISSUES_FOUND\" | \"NO_SIGNIFICANT_ISSUES\"
+  \"requirements\": [
+    {\"requirement\": \"what the criterion requires\", \"evidence\": \"file:line and description\", \"status\": \"PROVEN\" | \"ABSENT\" | \"WEAK\"}
+  ],
+  \"unproven_requirements\": [\"requirements that could not be proven\"],
+  \"verdict\": \"ALL_PROVEN\" | \"GAPS_FOUND\"
 }"
 
-                    local edge_file="$CHECK_DIR/$sc-edge-cases.json"
-                    if claude --dangerously-skip-permissions -p "$edge_prompt" > "$edge_file" 2>&1; then
-                        local edge_json=$(grep -A 1000 '{' "$edge_file" | grep -B 1000 '}' | head -n -0 || cat "$edge_file")
-                        echo "$edge_json" > "$edge_file.clean"
-                        local edge_verdict=$(jq -r '.verdict // "UNKNOWN"' "$edge_file.clean" 2>/dev/null || echo "UNKNOWN")
-                        if [[ "$edge_verdict" == "ISSUES_FOUND" ]]; then
+                local reversal_file="$CHECK_DIR/$sc-reversal.json"
+                if claude --dangerously-skip-permissions -p "$reversal_prompt" > "$reversal_file" 2>&1; then
+                    local rev_json
+                    rev_json=$(sed -n '/^{/,/^}/p' "$reversal_file" | head -100)
+                    if [[ -z "$rev_json" ]]; then
+                        rev_json=$(grep -A 1000 '{' "$reversal_file" | grep -B 1000 '}' || true)
+                    fi
+                    if [[ -n "$rev_json" ]]; then
+                        echo "$rev_json" > "$reversal_file.clean"
+                        local rev_verdict
+                        rev_verdict=$(jq -r '.verdict // "UNKNOWN"' "$reversal_file.clean" 2>/dev/null || echo "UNKNOWN")
+                        if [[ "$rev_verdict" == "GAPS_FOUND" ]]; then
                             significant_gaps_found=true
-                            skeptical_gaps=$(jq -r '.unhandled_edge_cases[0] // .unaddressed_requirements[0] // "unspecified"' "$edge_file.clean" 2>/dev/null)
+                            if [[ -z "$skeptical_gaps" || "$skeptical_gaps" == "unspecified" ]]; then
+                                skeptical_gaps=$(jq -r '.unproven_requirements[0] // "unspecified"' "$reversal_file.clean" 2>/dev/null)
+                            fi
+                            log "    Pass 3 (burden reversal): GAPS FOUND"
+                        else
+                            log "    Pass 3 (burden reversal): all requirements proven"
                         fi
-                    fi
-                fi
-
-                # Aggregate: MET becomes PARTIAL if gaps found
-                if $significant_gaps_found; then
-                    final_status="PARTIAL"
-                fi
-            fi
-
-            case "$final_status" in
-                MET)
-                    log_pass "$sc: MET (confidence: $confidence)"
-                    ;;
-                PARTIAL)
-                    if [[ -n "$skeptical_gaps" ]]; then
-                        log_warn "$sc: PARTIAL (skeptical review) - $skeptical_gaps"
                     else
-                        local gaps=$(jq -r '.gaps[0] // "unspecified"' "$result_file.clean" 2>/dev/null)
-                        log_warn "$sc: PARTIAL - $gaps"
+                        significant_gaps_found=true
+                        [[ -z "$skeptical_gaps" ]] && skeptical_gaps="pass 3 output unparseable (fail-closed)"
+                        log "    Pass 3 (burden reversal): UNPARSEABLE — fail-closed, gaps assumed"
                     fi
-                    ;;
-                NOT_MET)
-                    local gaps=$(jq -r '.gaps[0] // "unspecified"' "$result_file.clean" 2>/dev/null)
-                    log_fail "CONTENT: $sc not implemented - $gaps"
-                    ;;
-                *)
-                    log_warn "$sc: Could not verify (status: $final_status)"
-                    ;;
-            esac
-        else
-            log_warn "$sc: Verification failed (claude error)"
-        fi
-
-    done < "$criteria_file"
-
-    log ""
-}
-
-# ============================================
-# Phase 4.5: Criterion Tests
-# ============================================
-
-phase4_5_criterion_tests() {
-    if $STRUCTURE_ONLY || $SKIP_CRITERION_TESTS; then
-        log "=== Phase 4.5: Criterion Tests (SKIPPED) ===" "always"
-        log ""
-        return 0
-    fi
-
-    log "=== Phase 4.5: Criterion Tests ===" "always"
-
-    local criteria_file="$CHECK_DIR/criteria.txt"
-    local tests_run=0
-    local tests_passed=0
-    local tests_failed=0
-
-    while IFS='|' read -r sc files subproject tests benchmark; do
-        [[ -z "$sc" ]] && continue
-        [[ -z "$tests" ]] && continue
-
-        # Parse test field: "command | test_files" or just "command"
-        local test_command=""
-        local test_files=""
-
-        if [[ "$tests" == *"|"* ]]; then
-            test_command="${tests%%|*}"
-            test_files="${tests#*|}"
-            test_command="${test_command## }"  # trim leading space
-            test_command="${test_command%% }"  # trim trailing space
-            test_files="${test_files## }"
-            test_files="${test_files%% }"
-        else
-            test_command="$tests"
-        fi
-
-        # Verify test file(s) exist if specified
-        if [[ -n "$test_files" ]]; then
-            local missing_test_files=""
-            IFS=',' read -ra TEST_FILE_ARRAY <<< "${test_files//|/,}"
-            for test_file in "${TEST_FILE_ARRAY[@]}"; do
-                test_file="${test_file## }"
-                test_file="${test_file%% }"
-                [[ -z "$test_file" ]] && continue
-                local full_test_path="$FULL_PROJECT_DIR/$test_file"
-                if [[ ! -f "$full_test_path" ]]; then
-                    missing_test_files+="$test_file "
+                else
+                    significant_gaps_found=true
+                    [[ -z "$skeptical_gaps" ]] && skeptical_gaps="pass 3 claude call failed (fail-closed)"
+                    log "    Pass 3 (burden reversal): FAILED — fail-closed, gaps assumed"
                 fi
-            done
+            fi
 
-            if [[ -n "$missing_test_files" ]]; then
-                log_warn "$sc: Test file(s) missing: $missing_test_files"
+            # Pass 4: Minimal counterexample
+            if [[ $SKEPTICAL_PASSES -ge 3 ]]; then
+                local counter_prompt="Construct a MINIMAL COUNTEREXAMPLE: the simplest concrete scenario that would cause this implementation to violate the criterion.
+
+## Criterion
+$sc_line
+
+## Files
+$file_contents
+
+## Task
+1. Find the simplest possible input, state, or execution path that would cause the implementation to produce incorrect results relative to the criterion
+2. Be SPECIFIC: name exact input values, the expected behavior per the criterion, and what the code would actually do
+3. Trace through the code step by step to verify your counterexample is real
+4. If you genuinely cannot construct a valid counterexample after exhaustive analysis, explain WHY no counterexample exists — do not simply give up
+
+## Output Format (JSON only)
+{
+  \"counterexample\": {
+    \"scenario\": \"description of the minimal failing scenario\",
+    \"input\": \"specific input or state\",
+    \"expected_per_criterion\": \"what should happen\",
+    \"actual_code_behavior\": \"what the code would do\",
+    \"code_path\": \"file:line trace through the failure\"
+  },
+  \"verdict\": \"COUNTEREXAMPLE_FOUND\" | \"NO_COUNTEREXAMPLE\"
+}"
+
+                local counter_file="$CHECK_DIR/$sc-counterexample.json"
+                if claude --dangerously-skip-permissions -p "$counter_prompt" > "$counter_file" 2>&1; then
+                    local ctr_json
+                    ctr_json=$(sed -n '/^{/,/^}/p' "$counter_file" | head -100)
+                    if [[ -z "$ctr_json" ]]; then
+                        ctr_json=$(grep -A 1000 '{' "$counter_file" | grep -B 1000 '}' || true)
+                    fi
+                    if [[ -n "$ctr_json" ]]; then
+                        echo "$ctr_json" > "$counter_file.clean"
+                        local ctr_verdict
+                        ctr_verdict=$(jq -r '.verdict // "UNKNOWN"' "$counter_file.clean" 2>/dev/null || echo "UNKNOWN")
+                        if [[ "$ctr_verdict" == "COUNTEREXAMPLE_FOUND" ]]; then
+                            significant_gaps_found=true
+                            if [[ -z "$skeptical_gaps" || "$skeptical_gaps" == "unspecified" ]]; then
+                                skeptical_gaps=$(jq -r '.counterexample.scenario // "unspecified"' "$counter_file.clean" 2>/dev/null)
+                            fi
+                            log "    Pass 4 (counterexample): COUNTEREXAMPLE FOUND"
+                        else
+                            log "    Pass 4 (counterexample): no counterexample found"
+                        fi
+                    else
+                        significant_gaps_found=true
+                        [[ -z "$skeptical_gaps" ]] && skeptical_gaps="pass 4 output unparseable (fail-closed)"
+                        log "    Pass 4 (counterexample): UNPARSEABLE — fail-closed, gaps assumed"
+                    fi
+                else
+                    significant_gaps_found=true
+                    [[ -z "$skeptical_gaps" ]] && skeptical_gaps="pass 4 claude call failed (fail-closed)"
+                    log "    Pass 4 (counterexample): FAILED — fail-closed, gaps assumed"
+                fi
+            fi
+
+            # Aggregate: any gap from any pass → PARTIAL
+            if $significant_gaps_found; then
+                final_status="PARTIAL"
             fi
         fi
 
-        # Run test command
-        if [[ -n "$test_command" ]]; then
-            ((tests_run++))
-            log "  $sc: Running tests..."
-
-            local test_log="$CHECK_DIR/$sc-tests.log"
-            if (cd "$FULL_PROJECT_DIR" && eval "$test_command" > "$test_log" 2>&1); then
-                ((tests_passed++))
-                log_pass "$sc: Tests passed"
-            else
-                ((tests_failed++))
-                local exit_code=$?
-                log_fail "CRITERION_TEST: $sc tests failed (exit $exit_code)"
-                log "    See: $test_log"
-            fi
+        # Apply evidence cap: no tests + Done → PARTIAL at best
+        if [[ "$evidence_cap" == "PARTIAL" && "$final_status" == "MET" ]]; then
+            final_status="PARTIAL"
+            skeptical_gaps="no deterministic tests defined (evidence cap applied)"
         fi
+
+        case "$final_status" in
+            MET)
+                log_pass "$sc: MET (confidence: $confidence)"
+                ;;
+            PARTIAL)
+                if [[ -n "$skeptical_gaps" ]]; then
+                    log_warn "$sc: PARTIAL — $skeptical_gaps"
+                else
+                    local gaps
+                    gaps=$(jq -r '.gaps[0] // "unspecified"' "$result_file.clean" 2>/dev/null)
+                    log_warn "$sc: PARTIAL — $gaps"
+                fi
+                ;;
+            NOT_MET)
+                local gaps
+                gaps=$(jq -r '.gaps[0] // "unspecified"' "$result_file.clean" 2>/dev/null)
+                log_fail "CONTENT: $sc not implemented — $gaps"
+                ;;
+            *)
+                if $ALLOW_UNVERIFIED; then
+                    log_warn "$sc: Could not verify (status: $final_status) — allowed by --allow-unverified"
+                else
+                    log_fail "VERIFY: $sc — verification returned unknown status: $final_status"
+                fi
+                ;;
+        esac
 
     done < "$criteria_file"
-
-    if [[ $tests_run -eq 0 ]]; then
-        log "  No criterion-level tests defined"
-    else
-        log "  Tests: $tests_passed/$tests_run passed"
-    fi
 
     log ""
 }
@@ -772,6 +996,36 @@ phase4_5_criterion_tests() {
 # ============================================
 # Phase 4.6: Benchmark Verification
 # ============================================
+
+# Try to extract a metric value from JSON-line output first, fall back to regex
+extract_metric_value() {
+    local output="$1"
+    local metric_name="$2"
+
+    # Try JSON-line format: {"metric": "name", "value": 123.4, "unit": "ms"}
+    local json_value=""
+    json_value=$(echo "$output" | grep -E '^\{' | jq -r "select(.metric == \"$metric_name\") | .value" 2>/dev/null | head -1)
+    if [[ -n "$json_value" && "$json_value" != "null" ]]; then
+        echo "$json_value"
+        return 0
+    fi
+
+    # Fall back to regex: look for "metric_name: value" or "metric_name = value" or "metric_name value"
+    local regex_value=""
+    regex_value=$(echo "$output" | grep -i "$metric_name" | grep -oE '[0-9]+(\.[0-9]+)?' | head -1)
+    if [[ -n "$regex_value" ]]; then
+        echo "$regex_value"
+        return 0
+    fi
+
+    return 1
+}
+
+# Parse all JSON-line metrics from benchmark output into a JSON object
+parse_json_line_metrics() {
+    local output="$1"
+    echo "$output" | grep -E '^\{' | jq -s 'map(select(.metric and .value)) | if length > 0 then . else empty end' 2>/dev/null || echo "[]"
+}
 
 phase4_6_benchmark_verification() {
     if $STRUCTURE_ONLY || $SKIP_BENCHMARKS; then
@@ -786,6 +1040,38 @@ phase4_6_benchmark_verification() {
     local benchmarks_run=0
     local benchmarks_passed=0
     local benchmarks_failed=0
+    local benchmark_results_file="$CHECK_DIR/benchmark-results.json"
+
+    # Initialize results file
+    echo "{}" > "$benchmark_results_file"
+
+    # Run bench.sh first (if present) so its data is available for criterion checks and doc audit
+    local bench_script="$FULL_PROJECT_DIR/bench.sh"
+    if [[ -x "$bench_script" ]]; then
+        log "  Running bench.sh..."
+        local bench_sh_output=""
+        if bench_sh_output=$(cd "$FULL_PROJECT_DIR" && ./bench.sh 2>&1); then
+            echo "$bench_sh_output" > "$CHECK_DIR/bench.log"
+            log_pass "bench.sh passed"
+
+            local bench_metrics
+            bench_metrics=$(parse_json_line_metrics "$bench_sh_output")
+
+            if [[ "$bench_metrics" != "[]" && -n "$bench_metrics" ]]; then
+                local tmp_init
+                tmp_init=$(jq --argjson res "$bench_metrics" '. + {"bench.sh": $res}' "$benchmark_results_file" 2>/dev/null)
+                if [[ -n "$tmp_init" ]]; then
+                    echo "$tmp_init" > "$benchmark_results_file"
+                fi
+                log "  Collected $(echo "$bench_metrics" | jq 'length' 2>/dev/null || echo "?") metrics from bench.sh"
+            fi
+        else
+            local bs_exit=$?
+            echo "$bench_sh_output" > "$CHECK_DIR/bench.log"
+            log_fail "BENCH: bench.sh failed (exit $bs_exit)"
+            log "    See: $CHECK_DIR/bench.log"
+        fi
+    fi
 
     while IFS='|' read -r sc files subproject tests benchmark; do
         [[ -z "$sc" ]] && continue
@@ -819,6 +1105,13 @@ phase4_6_benchmark_verification() {
         if bench_output=$(cd "$FULL_PROJECT_DIR" && eval "$bench_command" 2>&1); then
             echo "$bench_output" > "$bench_log"
 
+            # Collect all JSON-line metrics from output
+            local all_metrics
+            all_metrics=$(parse_json_line_metrics "$bench_output")
+
+            # Build per-criterion result array
+            local sc_results="[]"
+
             # Check thresholds if specified
             if [[ -n "$thresholds" ]]; then
                 local all_thresholds_met=true
@@ -831,8 +1124,6 @@ phase4_6_benchmark_verification() {
                     threshold_spec="${threshold_spec%% }"
                     [[ -z "$threshold_spec" ]] && continue
 
-                    # Extract metric name, operator, and value
-                    # Patterns: "latency_p99 < 50ms" or "throughput > 1000/s"
                     local metric_name=""
                     local operator=""
                     local threshold_value=""
@@ -842,34 +1133,37 @@ phase4_6_benchmark_verification() {
                         operator="${BASH_REMATCH[2]}"
                         threshold_value="${BASH_REMATCH[3]}"
 
-                        # Try to extract metric from output (look for "metric: value" or "metric = value")
                         local actual_value=""
-                        actual_value=$(echo "$bench_output" | grep -i "$metric_name" | grep -oE '[0-9]+(\.[0-9]+)?' | head -1)
+                        actual_value=$(extract_metric_value "$bench_output" "$metric_name")
 
                         if [[ -n "$actual_value" ]]; then
-                            # Extract numeric threshold (remove units)
-                            local threshold_numeric=$(echo "$threshold_value" | grep -oE '[0-9]+(\.[0-9]+)?' | head -1)
+                            local threshold_numeric
+                            threshold_numeric=$(echo "$threshold_value" | grep -oE '[0-9]+(\.[0-9]+)?' | head -1)
 
                             if [[ -n "$threshold_numeric" ]]; then
                                 local comparison_result=0
                                 case "$operator" in
-                                    "<")
-                                        comparison_result=$(echo "$actual_value < $threshold_numeric" | bc -l 2>/dev/null || echo "0")
-                                        ;;
-                                    ">")
-                                        comparison_result=$(echo "$actual_value > $threshold_numeric" | bc -l 2>/dev/null || echo "0")
-                                        ;;
-                                    "=")
-                                        comparison_result=$(echo "$actual_value == $threshold_numeric" | bc -l 2>/dev/null || echo "0")
-                                        ;;
+                                    "<") comparison_result=$(echo "$actual_value < $threshold_numeric" | bc -l 2>/dev/null || echo "0") ;;
+                                    ">") comparison_result=$(echo "$actual_value > $threshold_numeric" | bc -l 2>/dev/null || echo "0") ;;
+                                    "=") comparison_result=$(echo "$actual_value == $threshold_numeric" | bc -l 2>/dev/null || echo "0") ;;
                                 esac
 
+                                local pass_str="true"
                                 if [[ "$comparison_result" == "1" ]]; then
                                     threshold_results+="$metric_name=$actual_value (${operator}${threshold_value} OK) "
                                 else
                                     threshold_results+="$metric_name=$actual_value (${operator}${threshold_value} FAIL) "
                                     all_thresholds_met=false
+                                    pass_str="false"
                                 fi
+
+                                # Add to results
+                                sc_results=$(echo "$sc_results" | jq \
+                                    --arg m "$metric_name" \
+                                    --argjson v "$actual_value" \
+                                    --arg t "${operator}${threshold_value}" \
+                                    --argjson p "$pass_str" \
+                                    '. + [{"metric": $m, "value": $v, "threshold": $t, "pass": $p}]' 2>/dev/null || echo "$sc_results")
                             else
                                 threshold_results+="$metric_name=$actual_value (threshold parse error) "
                             fi
@@ -888,10 +1182,21 @@ phase4_6_benchmark_verification() {
                     log_fail "BENCHMARK: $sc threshold not met - $threshold_results"
                 fi
             else
-                # No thresholds, just record that benchmark ran
+                # No thresholds — if we got JSON-line metrics, record them
+                if [[ "$all_metrics" != "[]" && -n "$all_metrics" ]]; then
+                    sc_results="$all_metrics"
+                fi
                 ((benchmarks_passed++))
                 log_pass "$sc: Benchmark completed (no thresholds specified)"
             fi
+
+            # Merge sc_results into benchmark_results_file
+            local tmp_results
+            tmp_results=$(jq --arg sc "$sc" --argjson res "$sc_results" '. + {($sc): $res}' "$benchmark_results_file" 2>/dev/null)
+            if [[ -n "$tmp_results" ]]; then
+                echo "$tmp_results" > "$benchmark_results_file"
+            fi
+
         else
             echo "$bench_output" > "$bench_log"
             ((benchmarks_failed++))
@@ -901,10 +1206,290 @@ phase4_6_benchmark_verification() {
 
     done < "$criteria_file"
 
+    # Regression detection: compare against previous results
+    local latest_file="$RESULTS_DIR/benchmark-latest.json"
+    if [[ -f "$latest_file" ]] && [[ -s "$benchmark_results_file" ]]; then
+        log "  Checking for regressions (threshold: ${REGRESSION_THRESHOLD}%)..."
+
+        local regressions_found=false
+        # Compare each metric in current vs latest
+        for sc in $(jq -r 'keys[]' "$benchmark_results_file" 2>/dev/null); do
+            local current_metrics
+            current_metrics=$(jq -r --arg sc "$sc" '.[$sc] // []' "$benchmark_results_file" 2>/dev/null)
+            local latest_metrics
+            latest_metrics=$(jq -r --arg sc "$sc" '.[$sc] // []' "$latest_file" 2>/dev/null)
+
+            [[ "$current_metrics" == "[]" || "$latest_metrics" == "[]" ]] && continue
+
+            for metric_name in $(echo "$current_metrics" | jq -r '.[].metric // empty' 2>/dev/null); do
+                local cur_val
+                cur_val=$(echo "$current_metrics" | jq -r --arg m "$metric_name" 'map(select(.metric == $m)) | .[0].value // empty' 2>/dev/null)
+                local prev_val
+                prev_val=$(echo "$latest_metrics" | jq -r --arg m "$metric_name" 'map(select(.metric == $m)) | .[0].value // empty' 2>/dev/null)
+
+                [[ -z "$cur_val" || -z "$prev_val" ]] && continue
+
+                # Check if current is worse by more than threshold
+                # For thresholds with ">", lower is worse; for "<", higher is worse
+                local threshold_dir
+                threshold_dir=$(echo "$current_metrics" | jq -r --arg m "$metric_name" 'map(select(.metric == $m)) | .[0].threshold // ""' 2>/dev/null)
+
+                local pct_change
+                if [[ "$prev_val" != "0" ]]; then
+                    pct_change=$(echo "scale=1; (($cur_val - $prev_val) / $prev_val) * 100" | bc -l 2>/dev/null || echo "0")
+                else
+                    continue
+                fi
+
+                # Determine if regression: ">" threshold means decrease is bad, "<" means increase is bad
+                local is_regression=false
+                if [[ "$threshold_dir" == ">"* ]]; then
+                    # Higher is better — negative pct_change beyond threshold is regression
+                    local neg_threshold
+                    neg_threshold=$(echo "-$REGRESSION_THRESHOLD" | bc -l)
+                    is_regression=$(echo "$pct_change < $neg_threshold" | bc -l 2>/dev/null || echo "0")
+                elif [[ "$threshold_dir" == "<"* ]]; then
+                    # Lower is better — positive pct_change beyond threshold is regression
+                    is_regression=$(echo "$pct_change > $REGRESSION_THRESHOLD" | bc -l 2>/dev/null || echo "0")
+                fi
+
+                if [[ "$is_regression" == "1" ]]; then
+                    log_warn "REGRESSION: $sc/$metric_name changed ${pct_change}% (${prev_val} → ${cur_val})"
+                    regressions_found=true
+                fi
+            done
+        done
+
+        if ! $regressions_found; then
+            log_pass "No benchmark regressions detected"
+        fi
+    fi
+
+    # Save current results as latest (only if benchmarks ran)
+    if [[ $benchmarks_run -gt 0 ]]; then
+        cp "$benchmark_results_file" "$latest_file" 2>/dev/null || true
+    fi
+
     if [[ $benchmarks_run -eq 0 ]]; then
         log "  No criterion-level benchmarks defined"
     else
         log "  Benchmarks: $benchmarks_passed/$benchmarks_run passed"
+    fi
+
+    log ""
+}
+
+# ============================================
+# Phase 4.7: Benchmark Documentation Audit
+# ============================================
+
+phase4_7_documentation_audit() {
+    if $STRUCTURE_ONLY || $SKIP_DOC_AUDIT; then
+        log "=== Phase 4.7: Documentation Audit (SKIPPED) ===" "always"
+        log ""
+        return 0
+    fi
+
+    log "=== Phase 4.7: Documentation Audit ===" "always"
+
+    # Fail-closed: Claude CLI required unless --allow-unverified
+    if ! command -v claude &> /dev/null; then
+        if $ALLOW_UNVERIFIED; then
+            log_warn "claude CLI not found — documentation audit skipped (--allow-unverified)"
+        else
+            log_fail "INFRA: claude CLI required for documentation audit (use --allow-unverified to skip)"
+        fi
+        log ""
+        return 0
+    fi
+
+    # Collect actual benchmark results from Phase 4.6 and bench.sh
+    local benchmark_results_file="$CHECK_DIR/benchmark-results.json"
+    local bench_log="$CHECK_DIR/bench.log"
+    local actual_results=""
+
+    if [[ -f "$benchmark_results_file" ]] && [[ "$(jq 'length' "$benchmark_results_file" 2>/dev/null)" != "0" ]]; then
+        actual_results+="### Criterion Benchmark Results (from Phase 4.6)
+\`\`\`json
+$(cat "$benchmark_results_file")
+\`\`\`
+"
+    fi
+
+    if [[ -f "$bench_log" ]]; then
+        actual_results+="### bench.sh Output
+\`\`\`
+$(head -200 "$bench_log")
+\`\`\`
+"
+    fi
+
+    # Find markdown files with benchmark claims
+    local claim_files=""
+    local claim_contents=""
+    local files_found=0
+    local exclude_dirs="node_modules|target|dist|build|\.git|__pycache__|\.next|vendor|\.project-metadata"
+
+    # Search by name pattern: *BENCHMARK*, *RESULTS*, *PERF*, bench/README*
+    while IFS= read -r md_file; do
+        [[ -z "$md_file" ]] && continue
+        local rel_path="${md_file#$FULL_PROJECT_DIR/}"
+
+        # Skip vendor/node_modules/target etc
+        if echo "$rel_path" | grep -qE "($exclude_dirs)"; then
+            continue
+        fi
+
+        claim_files+="$rel_path "
+        local file_size
+        file_size=$(wc -c < "$md_file" 2>/dev/null || echo "0")
+        file_size=${file_size//[^0-9]/}
+
+        # Truncate large files to avoid blowing context
+        if [[ $file_size -gt 10000 ]]; then
+            claim_contents+="
+### File: $rel_path (truncated, ${file_size} bytes)
+\`\`\`
+$(head -150 "$md_file")
+\`\`\`
+"
+        else
+            claim_contents+="
+### File: $rel_path
+\`\`\`
+$(cat "$md_file")
+\`\`\`
+"
+        fi
+        ((files_found++))
+    done < <(find "$FULL_PROJECT_DIR" -type f \( \
+        -iname "*benchmark*" -o -iname "*results*" -o -iname "*perf*" \
+    \) -name "*.md" 2>/dev/null | sort)
+
+    # Also check bench/README.md specifically
+    if [[ -f "$FULL_PROJECT_DIR/bench/README.md" ]]; then
+        local rel="bench/README.md"
+        if [[ "$claim_files" != *"$rel"* ]]; then
+            claim_contents+="
+### File: $rel
+\`\`\`
+$(cat "$FULL_PROJECT_DIR/$rel")
+\`\`\`
+"
+            ((files_found++))
+        fi
+    fi
+
+    # Check OBJECTIVE.md for inline performance claims (numbers with units)
+    if [[ -f "$FULL_PROJECT_DIR/OBJECTIVE.md" ]]; then
+        if grep -qE '[0-9]+(\.[0-9]+)?\s*(MIPS|MHz|K/s|M/s|ms|μs|ns|cycles|instr/s|c/s)' "$FULL_PROJECT_DIR/OBJECTIVE.md"; then
+            claim_contents+="
+### File: OBJECTIVE.md (performance claims)
+\`\`\`
+$(cat "$FULL_PROJECT_DIR/OBJECTIVE.md")
+\`\`\`
+"
+            ((files_found++))
+        fi
+    fi
+
+    if [[ $files_found -eq 0 ]]; then
+        log "  No benchmark documentation files found"
+        log ""
+        return 0
+    fi
+
+    if [[ -z "$actual_results" ]]; then
+        log_warn "No benchmark results to compare against (no benchmarks ran)"
+        log ""
+        return 0
+    fi
+
+    log "  Found $files_found documentation file(s) with benchmark claims"
+
+    # Claude cross-reference
+    local audit_prompt="You are auditing benchmark documentation for accuracy. Compare documented performance claims against actual benchmark results.
+
+## Actual Benchmark Results (from running benchmarks)
+$actual_results
+
+## Documented Benchmark Claims (from markdown files)
+$claim_contents
+
+## Task
+
+For each specific numeric performance claim in the documentation files:
+1. Find the corresponding actual benchmark result (if any)
+2. Compare the documented value against the actual value
+3. Classify each claim
+
+## Classification Rules
+
+- **ALIGNED**: Actual result is within 2x of documented claim (accounts for hardware differences, benchmark noise)
+- **STALE**: Actual result differs from documented claim by more than 2x
+- **UNVERIFIABLE**: No corresponding benchmark was run, so the claim cannot be checked
+
+Focus only on concrete numeric claims (e.g., \"53.24 MIPS\", \"4.4ms\", \"15 K/s\"). Skip vague qualitative statements.
+
+## Output Format (JSON only, no markdown)
+
+{
+  \"claims\": [
+    {\"file\": \"path/to/file.md\", \"claim\": \"53.24 MIPS\", \"metric\": \"WASM throughput\", \"actual\": \"48.1 MIPS\", \"status\": \"ALIGNED\", \"reason\": \"within 2x\"},
+    {\"file\": \"path/to/file.md\", \"claim\": \"114M instr/s\", \"metric\": \"native throughput\", \"actual\": null, \"status\": \"UNVERIFIABLE\", \"reason\": \"no benchmark ran for this metric\"}
+  ],
+  \"summary\": {
+    \"total\": 5,
+    \"aligned\": 3,
+    \"stale\": 1,
+    \"unverifiable\": 1
+  },
+  \"overall\": \"ALIGNED\" | \"STALE_CLAIMS_FOUND\" | \"UNVERIFIABLE_ONLY\"
+}"
+
+    local audit_result_file="$CHECK_DIR/documentation-audit.json"
+
+    if claude --dangerously-skip-permissions -p "$audit_prompt" > "$audit_result_file" 2>&1; then
+        # Extract JSON from response
+        local json_content
+        json_content=$(grep -A 1000 '{' "$audit_result_file" | grep -B 1000 '}' || cat "$audit_result_file")
+        echo "$json_content" > "$audit_result_file.clean"
+
+        local overall
+        overall=$(jq -r '.overall // "UNKNOWN"' "$audit_result_file.clean" 2>/dev/null || echo "PARSE_ERROR")
+        local total
+        total=$(jq -r '.summary.total // 0' "$audit_result_file.clean" 2>/dev/null || echo "0")
+        local aligned
+        aligned=$(jq -r '.summary.aligned // 0' "$audit_result_file.clean" 2>/dev/null || echo "0")
+        local stale
+        stale=$(jq -r '.summary.stale // 0' "$audit_result_file.clean" 2>/dev/null || echo "0")
+        local unverifiable
+        unverifiable=$(jq -r '.summary.unverifiable // 0' "$audit_result_file.clean" 2>/dev/null || echo "0")
+
+        case "$overall" in
+            ALIGNED)
+                log_pass "Documentation audit: $total claims checked, all aligned"
+                ;;
+            STALE_CLAIMS_FOUND)
+                log_fail "DOC_AUDIT: $stale stale claim(s) found ($aligned aligned, $unverifiable unverifiable)"
+                # Log individual stale claims
+                local stale_claims
+                stale_claims=$(jq -r '.claims[] | select(.status == "STALE") | "  \(.file): \(.claim) (actual: \(.actual // "?")) — \(.reason // "")"' "$audit_result_file.clean" 2>/dev/null)
+                if [[ -n "$stale_claims" ]]; then
+                    echo "$stale_claims" | while IFS= read -r line; do
+                        log "$line" "always"
+                    done
+                fi
+                ;;
+            UNVERIFIABLE_ONLY)
+                log_warn "Documentation audit: $unverifiable unverifiable claim(s), none stale ($aligned aligned)"
+                ;;
+            *)
+                log_warn "Documentation audit: could not determine result (overall: $overall)"
+                ;;
+        esac
+    else
+        log_warn "Documentation audit: Claude verification failed"
     fi
 
     log ""
@@ -1046,7 +1631,10 @@ phase6_subproject_recursion() {
             $($SKIP_SKEPTICAL && echo "--no-skeptical") \
             $($SKIP_CRITERION_TESTS && echo "--no-criterion-tests") \
             $($SKIP_BENCHMARKS && echo "--no-benchmarks") \
+            $($SKIP_DOC_AUDIT && echo "--no-doc-audit") \
+            $($ALLOW_UNVERIFIED && echo "--allow-unverified") \
             --skeptical-passes "$SKEPTICAL_PASSES" \
+            --regression-threshold "$REGRESSION_THRESHOLD" \
             --json > "$subproject_result_file" 2>&1; then
             log_pass "Subproject $subproject: PASS"
         else
@@ -1080,9 +1668,13 @@ phase7_composition_check() {
 
     log "=== Phase 7: Composition Check ===" "always"
 
-    # Check if claude CLI is available
+    # Fail-closed: Claude CLI required unless --allow-unverified
     if ! command -v claude &> /dev/null; then
-        log_warn "claude CLI not found - skipping composition verification"
+        if $ALLOW_UNVERIFIED; then
+            log_warn "claude CLI not found — composition verification skipped (--allow-unverified)"
+        else
+            log_fail "INFRA: claude CLI required for composition verification (use --allow-unverified to skip)"
+        fi
         log ""
         return 0
     fi
@@ -1217,7 +1809,7 @@ Check for:
         local result_file="$CHECK_DIR/$sc-composition.json"
 
         if claude --dangerously-skip-permissions -p "$composition_prompt" > "$result_file" 2>&1; then
-            local json_content=$(grep -A 1000 '{' "$result_file" | grep -B 1000 '}' | head -n -0 || cat "$result_file")
+            local json_content=$(grep -A 1000 '{' "$result_file" | grep -B 1000 '}' || cat "$result_file")
             echo "$json_content" > "$result_file.clean"
 
             local comp_status=$(jq -r '.composition_status // "UNKNOWN"' "$result_file.clean" 2>/dev/null || echo "PARSE_ERROR")
@@ -1335,9 +1927,31 @@ phase9_summary() {
         done
         criteria_json+="}"
 
+        # Build benchmark data
+        local benchmark_json="{}"
+        local benchmark_results_file="$CHECK_DIR/benchmark-results.json"
+        local audit_result_file="$CHECK_DIR/documentation-audit.json.clean"
+
+        if [[ -f "$benchmark_results_file" ]]; then
+            benchmark_json=$(jq '{results: .}' "$benchmark_results_file" 2>/dev/null || echo '{"results": {}}')
+        fi
+
+        if [[ -f "$audit_result_file" ]]; then
+            local audit_summary
+            audit_summary=$(jq '.summary // {}' "$audit_result_file" 2>/dev/null || echo '{}')
+            benchmark_json=$(echo "$benchmark_json" | jq --argjson audit "$audit_summary" '. + {documentation_audit: $audit}' 2>/dev/null || echo "$benchmark_json")
+        fi
+
+        local latest_file="$RESULTS_DIR/benchmark-latest.json"
+        if [[ -f "$latest_file" ]]; then
+            local latest_ts
+            latest_ts=$(stat -f %Sm -t %Y%m%d-%H%M%S "$latest_file" 2>/dev/null || echo "unknown")
+            benchmark_json=$(echo "$benchmark_json" | jq --arg ts "$latest_ts" '. + {regression: {compared_to: $ts}}' 2>/dev/null || echo "$benchmark_json")
+        fi
+
         cat << EOF
 {
-  "version": 2,
+  "version": 3,
   "outcome": "$([[ ${#VIOLATIONS[@]} -eq 0 ]] && echo "PASS" || echo "FAIL")",
   "timestamp": "$TIMESTAMP",
   "project": {
@@ -1356,6 +1970,7 @@ phase9_summary() {
     "composite": $composite_count
   },
   "criteria": $criteria_json,
+  "benchmarks": $benchmark_json,
   "passes": $(printf '%s\n' "${PASSES[@]}" | jq -R . | jq -s .),
   "warnings": $(printf '%s\n' "${WARNINGS[@]}" | jq -R . | jq -s .),
   "violations": $(printf '%s\n' "${VIOLATIONS[@]}" | jq -R . | jq -s .)
@@ -1397,7 +2012,7 @@ EOF
     # Save last-check.json
     cat > "$RESULTS_DIR/last-check.json" << EOF
 {
-  "version": 2,
+  "version": 3,
   "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "outcome": "$([[ ${#VIOLATIONS[@]} -eq 0 ]] && echo "PASS" || echo "FAIL")",
   "project": "$PROJECT_PATH",
@@ -1420,7 +2035,10 @@ EOF
     "skip_skeptical": $SKIP_SKEPTICAL,
     "skip_criterion_tests": $SKIP_CRITERION_TESTS,
     "skip_benchmarks": $SKIP_BENCHMARKS,
-    "skeptical_passes": $SKEPTICAL_PASSES
+    "skip_doc_audit": $SKIP_DOC_AUDIT,
+    "allow_unverified": $ALLOW_UNVERIFIED,
+    "skeptical_passes": $SKEPTICAL_PASSES,
+    "regression_threshold": $REGRESSION_THRESHOLD
   },
   "results_dir": "$CHECK_DIR"
 }
@@ -1441,9 +2059,10 @@ main() {
     phase1_structural
     phase2_parse_criteria
     phase3_classify_criteria
-    phase4_leaf_verification
-    phase4_5_criterion_tests
+    phase4_deterministic_evidence
+    phase4_5_semantic_verification
     phase4_6_benchmark_verification
+    phase4_7_documentation_audit
     phase5_coverage_check
     phase6_subproject_recursion
     phase7_composition_check

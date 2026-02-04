@@ -35,6 +35,8 @@ A project has:
 **For autonomous execution**, projects should include:
 - `build.sh` — exits 0 on successful build
 - `test.sh` — exits 0 on all tests passing
+- `bench.sh` — exits 0 on success; stdout is JSON lines:
+  `{"metric": "name", "value": 123.4, "unit": "ms"}`
 
 These scripts enable external verification independent of Claude's claims.
 
@@ -97,6 +99,7 @@ Five invariants that must always hold:
 - Criterion: measurement, output, or file:line reference
 - Criterion tests: `[SC-N]` → `[command]` → PASS/FAIL
 - Criterion benchmark: `[SC-N]` → `[metric]` = [value] ([threshold])
+- Documentation: benchmark claims in markdown files align with actual results
 
 ### Context Budget Invariant
 > Every leaf criterion's mapped files must total ≤80KB. Exceeding = decomposition required.
@@ -124,19 +127,23 @@ This serves the Minimal principle: at each hierarchy level, the relevant context
 verify(objective):
   for each criterion:
     if leaf (files ≤ 80KB):
-      pass1: "Do these files implement this criterion?"
-      pass2: "Find reasons this does NOT implement it" (adversarial)
-      pass3: "Identify unhandled edge cases" (edge cases)
-      aggregate: MET only if no significant gaps found
-      run criterion tests (if defined)
+      run criterion tests (hard gate — Done criteria MUST have tests)
+      if tests fail: NOT_MET (skip Claude)
+      pass1: "Do these files implement this criterion?" (skeptical)
+      pass2: "Find flaws as hostile auditor" (file:line citations)
+      pass3: "Prove each requirement with code or mark ABSENT" (burden reversal)
+      pass4: "Construct minimal counterexample" (concrete scenario)
+      aggregate: MET only if tests pass AND all passes clean
+      no tests + Done → capped at PARTIAL (evidence cap)
       run benchmarks, check thresholds (if defined)
     if composite (has subproject):
       verify(subproject)  # recursive
       Claude: "Do child criteria compose to implement parent?"
              (includes child code if total ≤ 80KB)
+  fail-closed: infrastructure errors = violation (not warning)
 ```
 
-Verification follows the objective tree. A project passes when all leaf criteria pass and all compositions are sound.
+Verification follows the objective tree. A project passes when all leaf criteria pass and all compositions are sound. Tests are the hard gate; Claude is supplementary.
 
 ---
 
