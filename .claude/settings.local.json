@@ -1,7 +1,8 @@
 {
   "env": {
     "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "64000",
-    "MAX_THINKING_TOKENS": "31999"
+    "MAX_THINKING_TOKENS": "31999",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
   "permissions": {
     "allow": [
@@ -175,7 +176,30 @@
       "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments diff CLAUDE.md)",
       "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments diff .claude/settings.local.json)",
       "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments diff .claude/skills/project-check/SKILL.md)",
-      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments add CLAUDE.md .claude/settings.local.json .claude/skills/project-check/SKILL.md scripts/project-check.sh)"
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments add CLAUDE.md .claude/settings.local.json .claude/skills/project-check/SKILL.md scripts/project-check.sh)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments commit -m \"$\\(cat <<''EOF''\nfeat: Fail-closed verification with deterministic evidence gate and skeptical multi-pass\n\nRestructure project-check to address self-verification problem \\(Claude\njudging Claude''s work\\). Tests are now the hard gate; Claude is supplementary.\n\n- Phase 4: Deterministic evidence runs first. Done criteria without Tests\n  field are violations. Test results gate semantic verification.\n- Phase 4.5: Fail-closed on missing CLI, parse errors, and skeptical pass\n  failures \\(violations, not warnings\\). --allow-unverified to opt out.\n- 4 verification passes: initial + hostile auditor + burden reversal +\n  minimal counterexample. Default skeptical passes 2→3.\n- Benchmarking: bench.sh contract, Phase 4.6 JSON parsing + regression\n  detection, Phase 4.7 documentation audit.\n- Bug fixes: exit code capture, macOS head -n -0, uniform fail-closed.\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments push)",
+      "Bash(for s in build.sh test.sh bench.sh)",
+      "Bash(do test -f \"$s\")",
+      "Bash(python3:*)",
+      "Bash(bash:*)",
+      "Bash(./bench.sh:*)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir diff -- crates/allir-stwo/src/stwo/logup.rs crates/allir-stwo/src/stwo/columns.rs)",
+      "Bash(chicken-csc:*)",
+      "Bash(csc:*)",
+      "Bash(csi:*)",
+      "Bash(chicken-install:*)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/al-experiments remote set-url:*)",
+      "Bash(git push:*)",
+      "Bash(chicken-csi:*)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/al-experiments log --oneline -10 -- SYSTEM.md MODEL.md PROPERTIES.md)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/al-experiments log --oneline -10)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/al-experiments diff HEAD -- SYSTEM.md MODEL.md PROPERTIES.md)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/al-experiments status --short SYSTEM.md MODEL.md PROPERTIES.md)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/al-experiments log --all --diff-filter=A --name-only --pretty=format:\"%h %s\" -- SYSTEM.md MODEL.md PROPERTIES.md)",
+      "Bash(pdftotext:*)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir/evm diff -- src/EcallHandler.sol)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir/evm status)"
     ]
   },
   "hooks": {
