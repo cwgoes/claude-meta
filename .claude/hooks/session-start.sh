@@ -26,6 +26,9 @@ if [ -n "$SESSION_ID" ]; then
     fi
 fi
 
+# Clean up legacy last-active.json (was a cross-session pollution vector)
+rm -f "$WORKSPACE_DIR/.claude/sessions/last-active.json"
+
 echo "=== Workspace Context ==="
 
 # LEARNINGS.md status (workspace-level)

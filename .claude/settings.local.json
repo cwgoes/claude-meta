@@ -1,7 +1,6 @@
 {
   "env": {
-    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "64000",
-    "MAX_THINKING_TOKENS": "31999",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "128000",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
   "permissions": {
@@ -199,7 +198,20 @@
       "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/al-experiments log --all --diff-filter=A --name-only --pretty=format:\"%h %s\" -- SYSTEM.md MODEL.md PROPERTIES.md)",
       "Bash(pdftotext:*)",
       "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir/evm diff -- src/EcallHandler.sol)",
-      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir/evm status)"
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir/evm status)",
+      "Bash(xargs:*)",
+      "Bash(pkill:*)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/zec-ai status)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/zec-ai log --oneline -5)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/zec-ai diff --stat)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/zec-ai add wallet/.gitignore wallet/Cargo.toml wallet/Cargo.lock wallet/src/lib.rs wallet/bench.html LOG.md OBJECTIVE.md)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/zec-ai diff --cached --stat)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/zec-ai commit -m \"$\\(cat <<''EOF''\nfeat: Orchard WASM proving benchmark — real Halo2 proofs verified\n\nWallet scaffold with orchard 0.12 \\(circuit feature\\) compiled to WASM.\nBenchmark generates real Halo2 proofs and verifies them in-browser:\n1-2 actions ~19s, 5 actions ~42s, 10 actions ~86s \\(~8.5s/action\\).\nProvingKey/VerifyingKey cached via OnceLock for reuse.\nzcash_primitives >= 0.26 confirmed WASM-incompatible \\(secp256k1 C dep\\).\n\nSession: Session 6\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/zec-ai push)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir diff --stat)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir/evm diff --stat)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir/evm log --oneline -5)",
+      "Bash(git -C /Users/cwgoes/Working/personal/claude-experiments/projects/allir/evm diff)"
     ]
   },
   "hooks": {

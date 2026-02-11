@@ -6,8 +6,9 @@
 
 set -e
 
-# Get session ID from environment (provided by Claude Code)
-SESSION_ID="${CLAUDE_SESSION_ID:-unknown}"
+# Read hook input from stdin (contains session_id)
+INPUT=$(cat)
+SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // "unknown"' 2>/dev/null)
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 
 # Counter file location (session-specific)

@@ -35,24 +35,20 @@ fi
 SESSION_DIR="$SESSIONS_DIR/$SESSION_ID"
 STATE_FILE="$SESSION_DIR/context-state.json"
 
-# No state for this session
-if [ ! -f "$STATE_FILE" ]; then
-    echo "=== Context Restored (No Prior State) ==="
-    echo "Session: ${SESSION_ID:0:8}..."
-    echo "No project was active before compression."
-    echo "Use /project-start <name> to select a project."
-    exit 0
+# Resolve effective state: per-session only (no cross-session inheritance)
+PROJECT_PATH=""
+STATUS=""
+if [ -f "$STATE_FILE" ]; then
+    STATE=$(cat "$STATE_FILE" 2>/dev/null)
+    PROJECT_PATH=$(echo "$STATE" | jq -r '.project // empty' 2>/dev/null)
+    STATUS=$(echo "$STATE" | jq -r '.status // "unknown"' 2>/dev/null)
 fi
 
-# Read session state
-STATE=$(cat "$STATE_FILE" 2>/dev/null)
-PROJECT_PATH=$(echo "$STATE" | jq -r '.project // empty' 2>/dev/null)
-STATUS=$(echo "$STATE" | jq -r '.status // "unknown"' 2>/dev/null)
-
-# Check if a project was actually selected
+# No usable per-session state
 if [ -z "$PROJECT_PATH" ] || [ "$STATUS" = "no_project_selected" ]; then
     echo "=== Context Restored (No Active Project) ==="
     echo "Session: ${SESSION_ID:0:8}..."
+    echo "No project was active before compression."
     echo "Use /project-start <name> to select a project."
     exit 0
 fi
