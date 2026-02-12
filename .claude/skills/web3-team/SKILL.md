@@ -97,6 +97,14 @@ The architect must classify every decision into one of three tiers:
 
 **When uncertain:** Escalate to User-Required. The cost of asking is low; the cost of a wrong autonomous decision is high.
 
+## Document Authority
+
+When spec documents and code disagree, authority follows this hierarchy:
+
+**OBJECTIVE.md > ARCHITECTURE.md > DESIGN.html > COMPONENTS.md > WIRING.md > code**
+
+If code is correct and a spec document is stale, update the spec document first, then mark any related audit finding as resolved. Never treat stale documentation as "the code is wrong."
+
 ---
 
 ## Protocol
@@ -218,21 +226,23 @@ When the user asks for status, output:
 
 | # | Task | Owner | Blocked By | Description |
 |---|------|-------|------------|-------------|
-| 1 | System Architecture Design | architect | — | Read OBJECTIVE.md. Design system architecture. Produce ARCHITECTURE.md with: system diagram (ASCII), component specs, API contracts, data models, blockchain integration, deployment architecture, security considerations, test strategy (specifying test frameworks for frontend, backend, contracts). Identify engineering hypotheses to validate. |
+| 1 | System Architecture Design | architect | — | Read OBJECTIVE.md. Design system architecture. Produce ARCHITECTURE.md with: system diagram (ASCII), component specs, API contracts, data models, blockchain integration, deployment architecture, security considerations, test strategy (specifying test frameworks for frontend, backend, contracts), patterns section (naming conventions, error handling approach, module structure, state management). Identify engineering hypotheses to validate. |
 | 2 | Visual Design | designer | — | Read OBJECTIVE.md. Coordinate with architect on component list. Design all user-facing flows. Produce DESIGN.html (single self-contained HTML file) with: mockups for every screen, component hierarchy, interaction patterns, responsive behavior, color/typography system. |
 | 3 | Backend Hypothesis Validation | backend | 1 | Receive hypothesis list from architect. Write throwaway PoC code to validate technical feasibility (blockchain interactions, performance characteristics, integration patterns). Report findings to architect. |
 | 4 | Frontend Hypothesis Validation | frontend | 1, 2 | Receive hypothesis list from architect/designer. Write throwaway PoC code for UI/interaction patterns. Report findings to architect/designer. |
 | 5 | Test Infrastructure Validation | qa | 1 | Read ARCHITECTURE.md Test Strategy for framework choices. Set up test framework scaffolding per specified frameworks. Validate key components are testable as designed. Report testability concerns to architect. |
-| 6 | Design Review | auditor | 1, 2 | Devil's advocate on both system and visual design. Review ARCHITECTURE.md for: inconsistencies, missing edge cases, security gaps, over-engineering, under-specification. Review DESIGN.html for: UX issues, missing flows, accessibility gaps, inconsistency with architecture. Report findings to architect and designer. |
-| 7 | Component Map | architect | 1, 2, 6 | After architecture and design are stable and auditor feedback is incorporated, produce COMPONENTS.md mapping every module to its spec section and owning engineer. Ensure complete coverage of OBJECTIVE.md. |
-| 8 | Design Approval | architect | 7 | Synthesize all feedback. Send final ARCHITECTURE.md + DESIGN.html + COMPONENTS.md summary to orchestrator for user approval. ALL important decisions must be explicitly cleared with user (see Decision Delegation Boundaries). |
-| 9 | PoC Cleanup | architect | 8 | After design approval, delete ALL throwaway PoC code from the source tree. If any PoC is worth preserving for reference, move it to `scratch/` (gitignored). Verify no PoC artifacts remain in the production source directories. |
+| 6 | Design Review | auditor | 1, 2 | Devil's advocate on both system and visual design. Review ARCHITECTURE.md for: inconsistencies, missing edge cases, security gaps, over-engineering, under-specification. Review DESIGN.html for: UX issues, missing flows, accessibility gaps, inconsistency with architecture. Explicitly flag every component, abstraction, or flow that could be removed or merged without violating OBJECTIVE.md. Report findings to architect and designer. |
+| 7 | Simplification Review | architect | 6 | Gate: before producing COMPONENTS.md, review ARCHITECTURE.md and DESIGN.html with one question: "what can we remove or merge while still meeting every OBJECTIVE.md criterion?" Eliminate components that exist for hypothetical future needs, merge components with a single consumer into their consumer, collapse abstraction layers that add indirection without value. Document each removal/merge decision briefly in ARCHITECTURE.md. Send simplification summary to orchestrator for user awareness. |
+| 8 | Component Map | architect | 7 | After architecture and design are stable, auditor feedback is incorporated, and simplification review is complete, produce COMPONENTS.md mapping every module to its spec section and owning engineer. Ensure complete coverage of OBJECTIVE.md. |
+| 9 | Design Approval | architect | 8 | Synthesize all feedback. Send final ARCHITECTURE.md + DESIGN.html + COMPONENTS.md summary to orchestrator for user approval. ALL important decisions must be explicitly cleared with user (see Decision Delegation Boundaries). |
+| 10 | PoC Cleanup | architect | 9 | After design approval, delete ALL throwaway PoC code from the source tree. If any PoC is worth preserving for reference, move it to `scratch/` (gitignored). Verify no PoC artifacts remain in the production source directories. |
 
 **Exit criteria:**
-- ARCHITECTURE.md complete
+- ARCHITECTURE.md complete (including Patterns section)
 - DESIGN.html (HTML) complete with mockups for all flows
 - COMPONENTS.md complete with full coverage
 - Auditor review complete, all findings resolved
+- Simplification review complete — architect has justified every component's existence against OBJECTIVE.md
 - User has approved all important design decisions
 - All throwaway PoC code deleted or isolated to `scratch/` (gitignored) — zero PoC artifacts in production source tree
 
@@ -261,7 +271,7 @@ Only after reconciliation does the architect create the implementation task brea
 | 1 | Implementation Planning + WIRING.md | architect | Read ARCHITECTURE.md, DESIGN.html, COMPONENTS.md. Produce WIRING.md listing ALL expected inter-component connections (all "unwired" initially). Decompose into implementation tasks with explicit file boundaries. Define mock interface contracts (see Mock-to-Real Pattern). Assign to backend/frontend. |
 | 2 | Mock Interface Contracts | architect | Define TypeScript/Solidity interfaces for every cross-boundary dependency (backend↔frontend, app↔contracts). These are the FIRST implementation artifact — engineers build against these, not against each other's code. Commit as standalone files. |
 | 3 | Continuous Testing | qa | Write tests as implementation progresses (NOT after). Frontend: Playwright E2E. Backend: unit + integration. Contracts: Forge/Hardhat. Report failures immediately to the appropriate engineer. |
-| 4 | Implementation Audit | auditor | Review code as it's produced. Check spec compliance (ARCHITECTURE.md) and visual compliance (DESIGN.html). Cross-reference WIRING.md — flag any "unwired" connections that should be wired by now. Report findings to architect ONLY. |
+| 4 | Implementation Audit | auditor | Review code as it's produced. Check spec compliance (ARCHITECTURE.md) and visual compliance (DESIGN.html). Cross-reference WIRING.md — flag any "unwired" connections that should be wired by now. Check pattern consistency (ARCHITECTURE.md Patterns section) — flag deviations in naming, error handling, module structure. Flag unnecessary complexity and simplification opportunities as findings. Report findings to architect ONLY. |
 | 5 | Design Sync | designer | Monitor frontend implementation for visual fidelity. Update DESIGN.html if design decisions change. Coordinate with frontend engineer on deviations. |
 | 6 | Architecture Sync | architect | Monitor implementation for architectural fidelity. Update ARCHITECTURE.md, COMPONENTS.md, and WIRING.md to reflect actual implementation. Route all important changes through orchestrator to user. |
 
@@ -308,7 +318,7 @@ If the team is starting at verification phase (not transitioning from implementa
 | # | Task | Owner | Description |
 |---|------|-------|-------------|
 | 1 | Verification Planning | architect | Define verification checklist from OBJECTIVE.md success criteria. Assign auditor to comprehensive code review. Coordinate with designer on visual verification. |
-| 2 | Full Code Audit | auditor | Read EVERY line of code. Check against ARCHITECTURE.md, DESIGN.html, and WIRING.md. Verify every WIRING.md connection is actually wired in code. Produce AUDIT.md with categorized findings (critical/high/medium/low). Check for: bugs, dead code, missing error handling, security issues, inconsistencies, simplification opportunities. |
+| 2 | Full Code Audit | auditor | Read EVERY line of code. Check against ARCHITECTURE.md, DESIGN.html, and WIRING.md. Verify every WIRING.md connection is actually wired in code. Verify pattern consistency (ARCHITECTURE.md Patterns section) across all files. Produce AUDIT.md with categorized findings (critical/high/medium/low). Check for: bugs, dead code, missing error handling, security issues, inconsistencies. Dedicate an AUDIT.md section to **Simplification Opportunities** — every abstraction, wrapper, indirection layer, or component that could be removed or inlined without violating OBJECTIVE.md criteria. |
 | 3 | Visual Verification | designer | Review every UI screen against DESIGN.html mockups. Flag inconsistencies, missing interactions, accessibility issues. Report to architect. |
 | 4 | Architecture Verification | architect | Verify all OBJECTIVE.md criteria are met with evidence. Review AUDIT.md findings and prioritize. Assign fix tasks to appropriate engineer (spawn on-call agents as needed). |
 | 5 | Final Consistency Check | architect | (Blocked by all fixes.) Verify all spec/doc/code consistent. Verify all audit findings resolved. Verify build.sh and test.sh pass. Present verification summary to orchestrator for user approval. |
@@ -386,6 +396,12 @@ System architecture specification. Owned by architect.
 
 ## Deployment
 [How the system is deployed]
+
+## Patterns
+- **Naming:** [conventions for files, functions, variables, components]
+- **Error handling:** [approach — e.g., Result types, try/catch boundaries, error propagation]
+- **Module structure:** [standard file layout, export conventions]
+- **State management:** [where state lives, how it flows]
 
 ## Security Considerations
 [Auth, key management, input validation, access control]

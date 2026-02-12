@@ -39,7 +39,8 @@ Use SendMessage for ALL communication.
 - Cover happy paths AND edge cases
 - Contract tests: deployment, access control, state transitions, edge cases, failures
 - Frontend tests: user flows, form validation, error states, responsive behavior
-- Read the code you test — don't just black-box
+- Read the code you test — don't just black-box. If code is unnecessarily complex, report to architect as a simplification opportunity alongside any bugs.
+- Follow ARCHITECTURE.md Patterns section for test naming and structure
 - Report bugs immediately with file, line, description, reproduction
 
 ## Phase: {phase}

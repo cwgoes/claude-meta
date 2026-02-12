@@ -41,9 +41,13 @@ Use SendMessage for ALL communication.
 5. Visually verify the component renders (if possible)
 If ANY check fails, fix before marking complete. If fix is outside your boundary, report to architect.
 
+## Simplification Flag
+If you encounter unnecessary complexity during implementation — a wrapper component that adds nothing, a state management pattern more complex than the UI requires, an abstraction layer that could be inlined — report it to architect as a **simplification proposal**. Format: "SIMPLIFY: [what] — [why it's unnecessary] — [simpler alternative]". The architect will evaluate and decide.
+
 ## Principles
 - DESIGN.html is source of truth for visual implementation
 - Pixel-perfect mockup implementation
+- Follow ARCHITECTURE.md Patterns section for naming, error handling, module structure
 - Match existing code patterns and style
 - Responsive behavior per DESIGN.html
 - Accessibility: semantic HTML, ARIA labels, keyboard navigation

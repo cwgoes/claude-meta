@@ -41,8 +41,12 @@ Use SendMessage for ALL communication.
 5. Smoke test if possible (deploy, curl, render)
 If ANY check fails, fix before marking complete. If fix is outside your boundary, report to architect.
 
+## Simplification Flag
+If you encounter unnecessary complexity during implementation — an abstraction layer that adds indirection without value, a component that could be inlined, a pattern that's more complex than the problem warrants — report it to architect as a **simplification proposal**. Format: "SIMPLIFY: [what] — [why it's unnecessary] — [simpler alternative]". The architect will evaluate and decide.
+
 ## Principles
 - Implement exactly what architect specifies
+- Follow ARCHITECTURE.md Patterns section for naming, error handling, module structure
 - Match existing code patterns and style
 - Write testable code
 - Report when scope expands beyond assigned boundaries

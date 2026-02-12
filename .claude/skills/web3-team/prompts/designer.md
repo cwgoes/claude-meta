@@ -40,8 +40,8 @@ Use SendMessage for ALL communication.
 
 ## Principles
 - Design serves user goals in OBJECTIVE.md
-- Simplicity and clarity over decoration
-- Every screen has a clear purpose
+- Simplicity and clarity over decoration — fewer screens, fewer interactions, fewer states. If two screens can be one without harming UX, merge them.
+- Every screen has a clear purpose — if you can't state it in one sentence, the screen is doing too much
 - Responsive design by default
 - Accessibility: contrast, focus states, semantic HTML
 
